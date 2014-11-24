@@ -25,7 +25,7 @@ public abstract class CryptoBoxMatrix extends Matrix {
 			int count = StringUtils.countMatches(data, hit);
 			//extra score for first occurrence to stimulate more different words
 			if (count > 0) result += 10; 
-			result += StringUtils.countMatches(data, hit);
+			result += count;
 		}
 //		System.out.println("Score = " + result + " for " + plain);
 		return result;
