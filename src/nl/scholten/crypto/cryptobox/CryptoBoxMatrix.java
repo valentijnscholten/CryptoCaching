@@ -10,10 +10,6 @@ public abstract class CryptoBoxMatrix extends Matrix {
 	
 	public CryptoBoxMatrix(String input, int size, int maxSteps, String[] hits) {
 		super(input, size, maxSteps);
-	}
-
-	public CryptoBoxMatrix(char[][] input, int size, int maxSteps, String[] hits) {
-		super(input, size, maxSteps);
 		this.hits = hits;
 	}
 
@@ -24,13 +20,12 @@ public abstract class CryptoBoxMatrix extends Matrix {
 
 	@Override
 	protected int score() {
-		String plain = toStringOneline();
 		int result = 0;
 		for (String hit: hits) {
-			int count = StringUtils.countMatches(plain, hit);
+			int count = StringUtils.countMatches(data, hit);
 			//extra score for first occurrence to stimulate more different words
 			if (count > 0) result += 10; 
-			result += StringUtils.countMatches(plain, hit);
+			result += StringUtils.countMatches(data, hit);
 		}
 //		System.out.println("Score = " + result + " for " + plain);
 		return result;
