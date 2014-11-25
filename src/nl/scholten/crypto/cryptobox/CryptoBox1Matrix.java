@@ -1,8 +1,10 @@
 package nl.scholten.crypto.cryptobox;
 
 
+
+@SuppressWarnings("serial")
 public class CryptoBox1Matrix extends CryptoBoxMatrix {
-	
+
 	private static String INPUT = "OORXVEJFENENGDADUNVIERNRLPNNTZESAUHTOULMINUCENAOSTVIETGREDENTWERVINRPUNTZEVEMDRIUENEEENXINTENGXXIXXX";
 	private static int SIZE = 10;
 	private static int STEPS = 4;
@@ -29,10 +31,17 @@ public class CryptoBox1Matrix extends CryptoBoxMatrix {
 		return solved;
 	}
 
+	@Override
+	protected Matrix copy() {
+		Matrix result = new CryptoBox1Matrix();
+		result.init(this);
+		return result;
+	}
+
 	public static void main(String[] args) {
-		Matrix org = new CryptoBox1Matrix(INPUT);
 		Matrix m = new CryptoBox1Matrix(INPUT);
-		
+
+		Matrix m2 = new CryptoBox1Matrix(INPUT);
 		
 //		m.shiftRowLeft(0);
 //		System.out.println(Matrix.toStringSideBySide(org, m));
@@ -46,8 +55,21 @@ public class CryptoBox1Matrix extends CryptoBoxMatrix {
 //		m.shiftColumnUp(0);
 //		System.out.println(Matrix.toStringSideBySide(org, m));
 //		System.out.println();
+	
+//		m.shiftRowLeft(9);
+//		m.shiftColumnUp(0);
+//		m.shiftColumnUp(0);
+//		m.shiftColumnUp(0);
+//		System.out.println(Matrix.toStringSideBySide(org, m));
+//		
+//		System.out.println(m.data);
+//		System.out.println("EORXVEJFENINGDADUNVIVRNRLPNNTZTSAUHTOULMNNUCENAOSTUIETGREDENEWERVINRPUOTZEVEMDRIEENEEENXINENGXXIXXXT");
+
+		m.solveSerially();
+//		m2.solveFJ();
+
 		
-		solve(org, m);
 	}
+
 	
 }

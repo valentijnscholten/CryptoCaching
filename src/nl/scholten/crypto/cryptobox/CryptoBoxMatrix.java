@@ -3,6 +3,7 @@ package nl.scholten.crypto.cryptobox;
 import org.apache.commons.lang3.StringUtils;
 
 
+@SuppressWarnings("serial")
 public abstract class CryptoBoxMatrix extends Matrix {
 
 	public static String[] HITS = new String[]{"NOORD", "OOST", "PUNT", "GRADEN", "MINUTEN", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF", "ZES", "ZEVEN", "ACHT", "NEGEN", "TIEN"};
@@ -11,11 +12,6 @@ public abstract class CryptoBoxMatrix extends Matrix {
 	public CryptoBoxMatrix(String input, int size, int maxSteps, String[] hits) {
 		super(input, size, maxSteps);
 		this.hits = hits;
-	}
-
-	public CryptoBoxMatrix(CryptoBoxMatrix m1) {
-		super(m1);
-		this.hits = m1.hits;
 	}
 
 	@Override
