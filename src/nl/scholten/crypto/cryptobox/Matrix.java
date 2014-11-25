@@ -1,5 +1,12 @@
 package nl.scholten.crypto.cryptobox;
 
+/**
+ * Performance notes:
+ * - making startswith a hit helps, 10x performance/
+ * - making startswith known hit mandatory helps most, doubling performance
+ * - doing no score helps, doubling performance again.
+ * - doing no apply does help, but not a lot (20%).
+ */
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,9 +16,48 @@ import org.apache.commons.lang3.StringUtils;
 public abstract class Matrix {
 
 	private static enum OPERATION {
-		COL_UP, COL_DOWN, ROW_LEFT, ROW_RIGHT
+		COL_UP(0, "CU"), COL_DOWN(1, "CD"), ROW_LEFT(2, "RL"), ROW_RIGHT(3, "RR");
+		
+		private int number;
+		private String value;
+
+		private OPERATION(int number, String value) {
+			this.number = number;
+			this.value = value;
+		}
+		
+		public static OPERATION parseValue(String value) {
+			for (OPERATION op: OPERATION.values()) {
+				if (op.getValue().equals(value)) return op;
+			}
+			return null;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		public String toString() {
+			return getValue();
+		}
+
+		
 	}
 
+	public class OperationInstance {
+		public OPERATION op;
+		public int index;
+
+		public OperationInstance(OPERATION op, int index) {
+			this.op = op;
+			this.index = index;
+		}
+		
+		public String toString() {
+			return op.toString() + "_" + index;
+		}
+	}
+	
 	protected String data;
 	protected char[] dataArray;
 
@@ -24,6 +70,8 @@ public abstract class Matrix {
 	private long start;
 
 	private int maxScore;
+	private List<List<OperationInstance>> maxScorers;
+	private List<String> maxScorersDetails;
 
 	public Matrix(String input, int size, int maxSteps) {
 		String cleaned = StringUtils.deleteWhitespace(input);
@@ -48,8 +96,11 @@ public abstract class Matrix {
 	protected void init(String input, int size, int maxSteps) {
 		this.size = size;
 		this.maxSteps = maxSteps;
+		this.maxScore = 0;
+		this.maxScorers = new ArrayList<List<OperationInstance>>();
+		this.maxScorersDetails = new ArrayList<String>();
 		this.data = new String(input.toCharArray());
-		//hacketiy hack to get access to the char[] as well.
+		// hacketiy hack to get access to the char[] as well.
 		Field field;
 		try {
 			field = data.getClass().getDeclaredField("value");
@@ -80,6 +131,7 @@ public abstract class Matrix {
 	// TODO deduplicate shifts
 	/**
 	 * x = row, y = col
+	 * 
 	 * @param x
 	 * @param y
 	 * @return
@@ -87,9 +139,10 @@ public abstract class Matrix {
 	public void setXY(int x, int y, char c) {
 		dataArray[(x * size) + y] = c;
 	}
-	
+
 	/**
 	 * x = row, y = col
+	 * 
 	 * @param x
 	 * @param y
 	 * @return
@@ -97,7 +150,7 @@ public abstract class Matrix {
 	public char getXY(int x, int y) {
 		return dataArray[(x * size) + y];
 	}
-	
+
 	public void shiftColumnUp(int column) {
 		// TODO check out of bounds on column?
 		char temp = getXY(0, column);
@@ -111,7 +164,7 @@ public abstract class Matrix {
 
 	public void shiftColumnDown(int column) {
 		// TODO check out of bounds on column?
-		char temp = getXY(size -1, column);
+		char temp = getXY(size - 1, column);
 
 		for (int row = size - 1; row > 0; row--) {
 			setXY(row, column, getXY(row - 1, column));
@@ -124,66 +177,68 @@ public abstract class Matrix {
 		// TODO check out of bounds on row?
 
 		char temp = getXY(row, 0);
-		
-		System.arraycopy(dataArray, (row * size) + 1, dataArray, (row * size),  (size -1));
-		
+
+		System.arraycopy(dataArray, (row * size) + 1, dataArray, (row * size),
+				(size - 1));
+
 		setXY(row, size - 1, temp);
-		
+
 	}
 
 	public void shiftRowRight(int row) {
 		// TODO check out of bounds on row?
 
 		char temp = getXY(row, size - 1);
-		
-		System.arraycopy(dataArray, (row * size), dataArray, (row * size) + 1,  (size -1));
-		
+
+		System.arraycopy(dataArray, (row * size), dataArray, (row * size) + 1,
+				(size - 1));
+
 		setXY(row, 0, temp);
 
 	}
 
-	private void apply(OPERATION op, int index) {
+	private void apply(OperationInstance oi) {
 
-		switch (op) {
+		switch (oi.op) {
 
 		case COL_UP:
-			shiftColumnUp(index);
+			shiftColumnUp(oi.index);
 			break;
 		case COL_DOWN:
-			shiftColumnDown(index);
+			shiftColumnDown(oi.index);
 			break;
 		case ROW_LEFT:
-			shiftRowLeft(index);
+			shiftRowLeft(oi.index);
 			break;
 		case ROW_RIGHT:
-			shiftRowRight(index);
+			shiftRowRight(oi.index);
 			break;
 
 		default:
-			throw new IllegalStateException("Unknown operation " + op);
+			throw new IllegalStateException("Unknown operation " + oi.op);
 		}
 	}
 
 	// TODO deduplicate?
-	private void unapply(OPERATION op, int index) {
+	private void unapply(OperationInstance oi) {
 
-		switch (op) {
+		switch (oi.op) {
 
 		case COL_UP:
-			shiftColumnDown(index);
+			shiftColumnDown(oi.index);
 			break;
 		case COL_DOWN:
-			shiftColumnUp(index);
+			shiftColumnUp(oi.index);
 			break;
 		case ROW_LEFT:
-			shiftRowRight(index);
+			shiftRowRight(oi.index);
 			break;
 		case ROW_RIGHT:
-			shiftRowLeft(index);
+			shiftRowLeft(oi.index);
 			break;
 
 		default:
-			throw new IllegalStateException("Unknown operation " + op);
+			throw new IllegalStateException("Unknown operation " + oi.op);
 		}
 	}
 
@@ -230,61 +285,105 @@ public abstract class Matrix {
 		return newArray;
 	}
 
+	/**
+	 * parses state string, sets internal field maxscore, maxscorers, maxscorersdetails. Return external opsLog.
+	 * @param state
+	 * @return
+	 */
+	public List<OperationInstance> parseState(String state) {
+		String[] parts = state.split("][[");
+		//parts[0] == last opslog
+		return parseOpsLog(parts[0]);
+		//parts[1] == maxScorers opslog
+//		maxScorers = parseMaxScorers(parts[1]);
+		//TODO replay to get maxscore
+		//parts[2] == maxScorersDetails
+//		maxScorersDetails = parseMaxScorersDetails(parts[2]);
+	}
+	
+	private List<OperationInstance> parseOpsLog(String stateString) {
+		//[CD_0, CU_8, RL_5, CU_2]
+		String clean = stateString;
+		clean = StringUtils.remove(stateString, ']');
+		clean = StringUtils.remove(clean, '[');
+		clean = StringUtils.deleteWhitespace(clean);
+		
+//		String[] parts = 
+		return null;
+	}
+
 	abstract protected boolean isSolved();
 
 	abstract protected int score();
 
-	public static Matrix solve(Matrix org, Matrix m) {
+	// doesn't really return the best matrix, prints results only
+	public static void solve(Matrix org, Matrix m) {
 		m.tries = 0;
 		m.start = System.currentTimeMillis();
-		return solveRecursive(org, m, m.maxSteps, new ArrayList<String>());
+		solveRecursive(org, m, m.maxSteps, new ArrayList<OperationInstance>());
+		long now = System.currentTimeMillis();
+		System.out.println("Total tries: " + m.tries + " maxScore: "
+				+ m.maxScore + " total time " + ((now - m.start) / 1000)
+				+ "s. which is " + (m.tries / (now - m.start))
+				+ " tries per second. maxScorers: " + m.maxScorers);
+		System.out.println(m.maxScorersDetails);
 	}
 
-	private static Matrix solveRecursive(Matrix org, Matrix m, int stepsLeft,
-			List<String> opsLog) {
+	private static void solveRecursive(Matrix org, Matrix m, int stepsLeft,
+			ArrayList<OperationInstance> opsLog) {
+
 		if (stepsLeft == 0) {
 			long now = System.currentTimeMillis();
 			int score = m.score();
+			// int score = 0;
 			boolean solved = false && m.isSolved();
 
-			if (score >= m.maxScore || solved) {
+			if (score > 10 && score >= m.maxScore || solved) {
+				if (score > m.maxScore) {
+					m.maxScorers.clear();
+					m.maxScorersDetails.clear();
+				}
 				m.maxScore = score;
+				m.maxScorers.add((ArrayList<OperationInstance>) opsLog.clone());
+				m.maxScorersDetails.add(new String(m.data.toCharArray()));
 				System.out.println(opsLog);
 				System.out.println(Matrix.toStringSideBySide(org, m));
 				System.out.println("Score: " + m.score() + " isSolved: "
 						+ solved);
 				System.out.println("Plain: " + m.toString());
-				System.out.println("Total tries: " + m.tries + " which is "
+				System.out.println("Current tries: " + m.tries + " which is "
 						+ (m.tries * 1000) / (Math.max(1, now - m.start))
 						+ " tries/second. " + opsLog);
 			} else {
 				m.tries++;
-				if (m.tries % 1000000 == 0) {
-					System.out.println("Total tries: " + m.tries + " which is "
+//				if (m.tries % 10000000000l == 0) {
+				if (m.tries % 1l == 0) {
+					System.out.println("Current tries: " + m.tries + " which is "
 							+ (m.tries * 1000) / (Math.max(1, now - m.start))
-							+ " tries/second. " + opsLog);
+							+ " tries/second. maxScore: "
+							+ m.maxScore + " state: " + opsLog + m.maxScorers + m.maxScorersDetails);
 				}
 			}
-			return m;
+			// if (score > 0) System.out.println(opsLog + " score: " + score);
+			return;
 		}
 
 		for (int index = 0; index < m.size; index++) {
 			// assume square matrix #rows=#cols
 			for (OPERATION op : OPERATION.values()) {
-				opsLog.add(op + "(" + index + ") ");
-//				System.out.println(opsLog.toString());
-				m.apply(op, index);
+				OperationInstance oi = m.new OperationInstance(op, index);
+				opsLog.add(oi);
+				// System.out.println(opsLog.toString());
+				m.apply(oi);
 				// System.out.println(Matrix.toStringSideBySide(org, m));
 				Matrix.solveRecursive(org, m, stepsLeft - 1, opsLog);
-				m.unapply(op, index);
+				m.unapply(oi);
 				opsLog.remove(opsLog.size() - 1);
 
 			}
 		}
 
 		// System.gc();
-
-		return m;
 	}
 
 }

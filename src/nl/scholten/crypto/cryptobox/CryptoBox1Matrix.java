@@ -34,18 +34,18 @@ public class CryptoBox1Matrix extends CryptoBoxMatrix {
 		Matrix m = new CryptoBox1Matrix(INPUT);
 		
 		
-		m.shiftRowLeft(0);
-		System.out.println(Matrix.toStringSideBySide(org, m));
-		System.out.println();
-		m.shiftRowRight(0);
-		System.out.println(Matrix.toStringSideBySide(org, m));
-		System.out.println();
-		m.shiftColumnDown(0);
-		System.out.println(Matrix.toStringSideBySide(org, m));
-		System.out.println();
-		m.shiftColumnUp(0);
-		System.out.println(Matrix.toStringSideBySide(org, m));
-		System.out.println();
+//		m.shiftRowLeft(0);
+//		System.out.println(Matrix.toStringSideBySide(org, m));
+//		System.out.println();
+//		m.shiftRowRight(0);
+//		System.out.println(Matrix.toStringSideBySide(org, m));
+//		System.out.println();
+//		m.shiftColumnDown(0);
+//		System.out.println(Matrix.toStringSideBySide(org, m));
+//		System.out.println();
+//		m.shiftColumnUp(0);
+//		System.out.println(Matrix.toStringSideBySide(org, m));
+//		System.out.println();
 		
 		solve(org, m);
 	}

@@ -21,15 +21,6 @@ public abstract class CryptoBoxMatrix extends Matrix {
 	@Override
 	protected int score() {
 		int result = 0;
-		//first see if the first characters are a hit, if not, score is 0.
-		boolean prematch = false;
-//		for (String hit: hits) {
-//			prematch = data.startsWith(hit);
-//			if (prematch) break;
-//		}
-		//we now the first part now
-		prematch = data.startsWith(hits[0]);
-		if (!prematch) return 0;
 		
 		for (String hit: hits) {
 			int count = StringUtils.countMatches(data, hit);

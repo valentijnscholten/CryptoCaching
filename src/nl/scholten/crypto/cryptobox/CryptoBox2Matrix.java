@@ -25,6 +25,13 @@ public class CryptoBox2Matrix extends CryptoBoxMatrix{
 		
 		return solved;
 	}
+	
+	@Override
+	protected int score() {
+		if (data.endsWith("PUNTNEGENNEGENVIJFVALERNIETIN") && data.startsWith("GOEDGEDAANGANAARVIJF")) { 
+			return super.score(); 
+		} else return 0;
+	}
 
 	public static void main(String[] args) throws IOException {
 		Matrix org = new CryptoBox2Matrix(INPUT);
