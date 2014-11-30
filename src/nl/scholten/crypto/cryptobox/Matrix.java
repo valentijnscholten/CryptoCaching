@@ -25,49 +25,75 @@ package nl.scholten.crypto.cryptobox;
  * 
  * 973714 unique keys out of 40^4 = 2560000  = 0,38 = 38%, so over 60% should be dropped by optimize
  * 
- * step1: 
+ * - use intern to filter duplicates. helps a bit serially, but no gain with FJ.
+ * - maintain hashmap with scores, slows it down a lot.
+ * - score by scan from start is very slow
+ * - use indexof instead of countmatches speeds up 200%
+ * - leave out keys with more than 2 equal oi adjacent save little <1% at 4 steps or 5 steps
+ * - make sure all segments of adjacent row or segments of adjacent col are in ascending order as the order doesn't matter -> saves 40% at 4 steps.
  * 
  * 
- */
-import java.lang.reflect.Field;
+ * 
+ * Faster string search:
+ * BoyerMooreHorspool 10x slower on single pattern match.
+ * BNDM also 10x slower
+ * shiftormismatch even slower and bad results.
+ * plain java regex is 10 times slower!
+ * 
+ */import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.StringUtils;
 
+
 @SuppressWarnings("serial")
 public abstract class Matrix extends RecursiveTask<Matrix> {
 
 	private AtomicLong triesGlobal = new AtomicLong();
-	private AtomicLong maxScoreGlobal = new AtomicLong();
+	protected AtomicLong maxScoreGlobal = new AtomicLong();
+	
+	private static final int MAX_MAX_SCORERS = 10;
 
-	private final static boolean COUNT_ATOMIC = true;
-	private final static boolean GATHER_DUPLICATES = true;
+	public final static boolean USE_FUZZY_SKIPPING = false;
+//	public final static boolean USE_FUZZY_SKIPPING = false;
+	public final static boolean USE_FUZZY_RANDOM_SKIP = true;
+	public final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
+	public final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 70; //at 70% I was still able to get a good enough solution for 1 & 2 
+			
+	public final static boolean COUNT_ATOMIC = true;
+	public final static boolean GATHER_DUPLICATES = false;
+	public final static boolean CACHE_SCORES = false;
+	public final static boolean USE_INTERN = false;
+	
+//	public final static int FJ_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+	public final static int FJ_POOL_SIZE = Runtime.getRuntime().availableProcessors() / 4;
 	
 	/**
-	 * How many paraellel steps before going serial.
+	 * How many parallel steps before going serial.
 	 */
 	public static int PARALLEL_STEPS = 1;
 
-	public static ForkJoinPool fjPool = new ForkJoinPool();
+	public static enum OPERATION {
+		COL_UP(false, true, "CU"), COL_DOWN(false, false, "CD"), ROW_LEFT(true, false, "RL"), ROW_RIGHT(true,
+				true, "RR");
 
-	private static enum OPERATION {
-		COL_UP(true, false, "CU"), COL_DOWN(true, false, "CD"), ROW_LEFT(false, true, "RL"), ROW_RIGHT(false, true,
-				"RR");
+		public boolean isRow;
+		public boolean isPositive;
+		public String value;
 
-		private boolean isCol;
-		private boolean isRow;
-		private String value;
-
-		private OPERATION(boolean isCol, boolean isRow, String value) {
-			this.isCol = isCol;
+		private OPERATION(boolean isRow, boolean isPositive, String value) {
 			this.isRow = isRow;
+			this.isPositive = isPositive;
 			this.value = value;
 		}
 
@@ -88,7 +114,7 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 		}
 	}
 
-	public class OperationInstance {
+	public static class OperationInstance {
 		public OPERATION op;
 		public int index;
 
@@ -100,8 +126,15 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 		public String toString() {
 			return op.toString() + "_" + index;
 		}
+		
+		//TODO not used?
+		public boolean equals(OperationInstance oi) {
+			return this.op == oi.op && this.index == oi.index;
+		}
 	}
 
+	public final static List<OperationInstance> oisAll = new ArrayList<OperationInstance>();
+	
 	public List<OperationInstance> ois;
 	public ArrayList<OperationInstance> opsLog;
 
@@ -110,18 +143,23 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 
 	private int stepsLeft;
 
-	private int size;
+	protected int size;
 	private long tries;
 	private long start;
 
-	private int maxScore;
-	private List<Matrix> maxScorers;
+	protected int maxScore;
+	protected Set<Matrix> maxScorersSet;
 	private int serialStepsLeft;
 	private Double bruteTries;
 	
+	protected long found;
+	protected List<List<OperationInstance>> headStarts;
+	
+	//key = m.data
 	Map<String, List<List<OperationInstance>>> duplicates = new HashMap<String, List<List<OperationInstance>>>();
+	Map<String, Integer> scoreCache = new HashMap<String, Integer>();
 
-	public Matrix(String input, int size, int maxSteps) {
+	public Matrix(String input, int size, int maxSteps, List<List<OperationInstance>> headStarts) {
 		String cleaned = StringUtils.deleteWhitespace(input);
 		// String[] rows = cleaned.split("(?<=\\G.{" + size + "})");
 		// char[][] matrix = new char[size][size];
@@ -130,22 +168,33 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 		// matrix[i] = row.toCharArray();
 		// i++;
 		// }
-		init(cleaned, size, maxSteps, new ArrayList<OperationInstance>());
+		init(cleaned, size, maxSteps, new ArrayList<OperationInstance>(maxSteps), headStarts);
+	}
+
+	public Matrix(Matrix m) {
+		this.init(m);
 	}
 
 	protected void init(Matrix m) {
-		this.init(m.data, m.size, m.stepsLeft, m.opsLog);
+		this.init(m.data, m.size, m.stepsLeft, m.opsLog, m.headStarts);
 		this.maxScore = m.maxScore;
-		this.maxScorers = new ArrayList<Matrix>(m.maxScorers);
+		this.maxScorersSet = m.maxScorersSet;
 		this.start = m.start;
 		this.tries = m.tries;
 		this.serialStepsLeft = m.serialStepsLeft;
 		this.triesGlobal = m.triesGlobal;
 		this.maxScoreGlobal = m.maxScoreGlobal;
+		this.found = m.found;
 	}
 
 	protected void init(String input, int size, int stepsLeft,
-			List<OperationInstance> opsLog) {
+			List<OperationInstance> opsLog, List<List<OperationInstance>> headStarts) {
+		this.headStarts = headStarts;
+		
+		if (headStarts == null || headStarts.isEmpty()) {
+			this.headStarts = new ArrayList<List<OperationInstance>>();
+			this.headStarts.add(new ArrayList<Matrix.OperationInstance>());
+		}
 		this.size = size;
 		this.opsLog = new ArrayList<Matrix.OperationInstance>(opsLog);
 		this.ois = getOisAll();
@@ -153,8 +202,8 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 		this.bruteTries = Math.pow(40d, stepsLeft);
 
 		this.maxScore = 0;
-		this.maxScorers = new ArrayList<Matrix>();
-		this.maxScorers.add(this);
+		this.maxScorersSet = Collections.synchronizedSet(new HashSet<Matrix>());
+		this.maxScorersSet.add(this);
 		this.serialStepsLeft = 3;
 
 		// deep copy
@@ -169,14 +218,24 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 				| IllegalArgumentException | IllegalAccessException e) {
 			throw new RuntimeException();
 		}
+		
 	}
 
-	private List<OperationInstance> getOisAll() {
-		ArrayList<OperationInstance> oisAll = new ArrayList<OperationInstance>();
-		for (OPERATION op : OPERATION.values()) {
-//			for (int j = 0; j < size; j++) {
-			for (int j = size - 1; j >=0; j--) {			
-				oisAll.add(new OperationInstance(op, j));
+	private synchronized List<OperationInstance> getOisAll() {
+		//make sure we only have one OI of each possibility.
+		if (oisAll.isEmpty()) {
+			for (OPERATION op : OPERATION.values()) {
+				
+				for (int j = 0; j < size; j++) {
+	//			for (int j = size - 1; j >=0; j--) {			
+					oisAll.add(new OperationInstance(op, j));
+				}
+			}
+	
+			//TODO select random order to have different initial results in different runs?
+			if (USE_FUZZY_SKIPPING && USE_FUZZY_RANDOM_KEY_ORDER) {
+				long seed = System.nanoTime();
+				Collections.shuffle(oisAll, new Random(seed));
 			}
 		}
 		return oisAll;
@@ -373,11 +432,13 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 	abstract protected boolean isSolved();
 
 	abstract protected int score();
-
+	abstract protected int scoreDetailed();
+	
 	abstract protected Matrix copy();
 
 	public void preStart() {
 		duplicates = new HashMap<String, List<List<OperationInstance>>>();
+		scoreCache = new HashMap<String, Integer>();
 		triesGlobal = new AtomicLong();
 		maxScoreGlobal = new AtomicLong();
 		Matrix m = this;
@@ -386,38 +447,51 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 		m.serialStepsLeft = stepsLeft - PARALLEL_STEPS;
 	}
 	
-	public void solveSerially() {
-		System.out.println("Starting serially");
-		preStart();
-		Matrix m = this;
-		Matrix winner = m.solveSeriallyInternal();
+	
+	@SuppressWarnings("unchecked")
+	private void printDuplicates() {
+		int i = 0;
+		for (Map.Entry<String, List<List<OperationInstance>>> entry: duplicates.entrySet()) {
+			if (entry.getValue().size() > 1) {
+				System.out.println(entry.getValue());
+				i++;
+			}
+		}
+		System.out.println("Duplicates: " + i);
+		
+	}
+	
+	private void logResult(Matrix winner) {
 		long now = System.currentTimeMillis();
-
-		System.out.println("Total tries serial: " + m.tries + " maxScore: "
-				+ m.maxScore + " total time " + ((now - m.start) / 1000)
-				+ "s. which is " + ((m.tries * 1000) / (now - m.start))
-				+ " tries per second. maxScorers: "
-				+ m.maxScorers.get(0).opsLog);
-		System.out.println(m.maxScorers);
-		System.out.println(winner.data + " score: " + winner.score());
-		System.out.println(triesGlobal.get());
+		
+		System.out.println("Total tries serial: " + winner.tries + " maxScore: "
+				+ winner.maxScore + " total time " + (((now-winner.start)<60000)?(now-winner.start) + "ms.":((now - winner.start) / 1000) + "s.")
+				+ " which is " + ((winner.tries * 1000) / (Math.max(1,now - winner.start)))
+				+ " tries per second. solution found after: " + (((winner.found-winner.start)<60000)?(winner.found-winner.start) + "ms.":((winner.found - winner.start) / 1000) + "s.")
+				+ "maxScorers: "
+				+ ((Matrix)winner.maxScorersSet.toArray()[0]).opsLog);
+		
+		System.out.println("maxScorers: " + winner.maxScorersSet.size() + ": "+ winner.maxScorersSet);
+		
+		for (Matrix maxScorer: winner.maxScorersSet){
+			System.out.println(maxScorer.opsLog);
+		}
+		
+		System.out.println(triesGlobal.get() + " / " + bruteTries.longValue() + " = " + (triesGlobal.get() * 100 / bruteTries.longValue()) + "%");
 		
 		if (GATHER_DUPLICATES) {
 			printDuplicates();
 		}
-
 	}
-
 	
-	@SuppressWarnings("unchecked")
-	private void printDuplicates() {
-		for (Map.Entry<String, List<List<OperationInstance>>> entry: duplicates.entrySet()) {
-			if (entry.getValue().size() > 1) {
-				System.out.println(entry.getValue());
-			}
-		}
-		System.out.println(duplicates.size());
+	public void solveSerially() {
+		System.out.println("Starting serially");
+		preStart();
+		Matrix winner = solveSeriallyInternal();
 
+//		Matrix winner = maxScorers.get(0);
+		
+		logResult(winner);
 	}
 
 	public void solveFJ() {
@@ -425,21 +499,12 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 
 		preStart();
 
-		ForkJoinPool mainPool = new ForkJoinPool();
+		ForkJoinPool mainPool = new ForkJoinPool(FJ_POOL_SIZE);
 		Matrix m = this;
 
 		Matrix winner = mainPool.invoke(m);
 
-		long now = System.currentTimeMillis();
-		System.out.println("Total tries fj: " + winner.tries + " maxScore: "
-				+ winner.maxScore + " total time "
-				+ ((now - winner.start) / 1000) + "s. which is "
-				+ ((winner.tries * 1000) / (now - winner.start))
-				+ " tries per second. maxScorers: "
-				+ winner.maxScorers.get(0).opsLog);
-		System.out.println(winner.maxScorers);
-		System.out.println(winner.data + " score: " + winner.score());
-		System.out.println(triesGlobal.get());
+		logResult(winner);
 	}
 
 	private void logProgress(Matrix m, boolean force) {
@@ -451,78 +516,205 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 			}
 		}
 		if (force || effectiveTries % 10000000l == 0) {
-//			 if (m.tries % 10l == 0) {
 			System.out.println("Current tries: " + effectiveTries + " ("
 					+ (effectiveTries * 100 / bruteTries.longValue())
 					+ "%) which is " + (effectiveTries * 1000)
 					/ (Math.max(1, now - m.start))
 					+ " tries/second. maxScore: " + m.maxScore + " state: "
-					+ m.opsLog + m.maxScorers.get(0).opsLog + m.maxScorers);
+
+					+ m.opsLog + ((Matrix)m.maxScorersSet.toArray()[0]).opsLog + m.maxScorersSet);
+			System.out.println("current data: " + ((Matrix)m.maxScorersSet.toArray()[0]).data + " " + m.toString());
 		}
 	}
 
-	private Matrix solveSeriallyInternal() {
-		Matrix m = this;
-		int s = m.stepsLeft;
-		if (m.stepsLeft == 0) {
-			long now = System.currentTimeMillis();
-			int score = m.score();
-			// int score = 0;
-			boolean solved = false && m.isSolved();
+	private void doScoring() {
+		// if already cache, ignore
+		int score = score();
+		if (CACHE_SCORES)
+			scoreCache.put(new String(data.toCharArray()), score);
 
-			m.tries++;
-			if (COUNT_ATOMIC)
-				triesGlobal.getAndIncrement();
+		tries++;
+		if (COUNT_ATOMIC)
+			triesGlobal.getAndIncrement();
 
-			
-			if (score > 10 && score >= m.maxScore || solved) {
-				if (score > m.maxScore) {
-					m.maxScorers.clear();
-				}
-				m.maxScore = score;
-
-				// store winner for future reference.
-				Matrix winner = m.copy();
-				m.maxScorers.add(winner);
-
-
-				if (score >= maxScoreGlobal.get()) {
-					maxScoreGlobal.getAndSet(score);
-					System.out.println("serial: new max score " + StringUtils.leftPad(String.valueOf(score), 4)  + " for: "
-							+ m.opsLog + " " + m.data + "\n" + toStringPretty());
-					logProgress(m, true);
-				}
-				// return winner;
-			}
-			if (GATHER_DUPLICATES) {
-				Matrix m2 = m.copy();
+		processScore(score);
+		
+		if (GATHER_DUPLICATES) {
+			if (score > 0) {
+				Matrix m2 = copy();
 				putOrCreate(duplicates, m2.data, m2.opsLog);
 			}
-			// else {
-			logProgress(m, false);
-			// }
-			// TODO return proper matrix
-			Matrix winner = m.maxScorers.get(0);
+		}
+	}
+
+	private void processScore(int score) {
+		long maxglobal = maxScoreGlobal.get();
+		if (score >= maxglobal) {
+			// we have to make sure another thread hasn't found a different high
+			// score which might get overwritten by us
+			if (maxScoreGlobal.compareAndSet(maxglobal, score)) {
+				final Matrix winner;
+				if (score > maxScore) {
+					maxScorersSet.clear();
+
+					maxScore = score;
+					found = System.currentTimeMillis();
+					winner = copy();
+					
+					// store winner for future reference.
+					if (maxScorersSet.size() < MAX_MAX_SCORERS) {
+						// don't add to much scorers otherwise out of memory. if
+						// there are more than 10, probably the right one isn't in
+						// there.
+						maxScorersSet.add(winner);
+					}
+
+				} else {
+					//equal score, so do detailedScoring to determine winner
+					maxScorersSet.add(copy());
+					//filter set
+					
+					Set<Matrix> newMaxScorers = new HashSet<Matrix>();
+					int newMaxScore = -1;
+					for (Matrix m: maxScorersSet) {
+						int scoreDetailed = m.scoreDetailed();
+						if (scoreDetailed > newMaxScore) {
+							newMaxScore = scoreDetailed; 
+							newMaxScorers.clear();
+							newMaxScorers.add(m);
+						} else if (scoreDetailed == newMaxScore) {
+							newMaxScorers.add(m);
+						} else {
+							//lower score, so ignore.
+						}
+					}
+					maxScorersSet = newMaxScorers;
+					maxScore = newMaxScore;
+				}
+
+
+				if (score >= maxglobal) {
+					long now = System.currentTimeMillis();
+					System.out.println("serial: new max score "
+							+ StringUtils.leftPad(String.valueOf(maxScore), 4)
+							+ "(" + (now - start) + "ms.)"
+							+ " for: " + opsLog + " " + data + "\n"
+							+ toStringPretty());
+					logProgress(this, true);
+				}
+			}
+		}
+	}
+	
+	private Matrix solveSeriallyInternal() {
+		//no headstart -> use empty headstart
+		if (headStarts == null || headStarts.isEmpty()) return solvedSeriallyInternalHeadStart(new ArrayList<Matrix.OperationInstance>());
+		
+		List<Matrix> partialResults = new ArrayList<Matrix>();
+		for(List<OperationInstance> headStart: headStarts) {
+			
+			Matrix m = copy();
+			m.headStarts = null;
+			m.start = start;
+			
+			partialResults.add(m.solvedSeriallyInternalHeadStart(headStart));
+		}
+		
+		return joinResults(partialResults);
+	}
+	
+	private Matrix joinResults(List<Matrix> partialResults) {
+		int joinedMaxScore = -1;
+		long sumTries = 0;
+		Matrix winner = null;
+		Set<Matrix> joinedMaxScorers = new HashSet<Matrix>();
+
+		for(Matrix m: partialResults){
+			int score = m.score();
+			sumTries += m.tries;
+			if (score >= joinedMaxScore) {
+				if (score > joinedMaxScore) {
+					joinedMaxScorers.clear();
+				}
+				winner = m;
+				joinedMaxScorers.addAll(winner.maxScorersSet);
+				joinedMaxScore = score;
+	
+				System.out.println("join: new max score for: " +
+				winner.data + " opsLog " + winner.opsLog + " score: "
+				+ score);
+			}
+		}
+		winner.tries = sumTries;
+		winner.maxScorersSet = new HashSet<Matrix>(joinedMaxScorers);
+		winner.start = start;
+
+		return winner;
+		
+	}
+	
+	private void apply(List<OperationInstance> headStart) {
+		for (OperationInstance oi: headStart) {
+			apply(oi);
+		}
+	}
+
+	private Matrix solvedSeriallyInternalHeadStart(List<OperationInstance> headStart) {
+		apply(headStart);
+		if (stepsLeft == 0) {
+			if (!CACHE_SCORES || !scoreCache.containsKey(data)) {
+				doScoring();
+			}
+					
+			logProgress(this, false);
+
+			Matrix winner = ((Matrix)maxScorersSet.toArray()[0]);
 			return winner;
 		}
-
-		// for (int index = 0; index < m.size; index++) {
-		// assume square matrix #rows=#cols
-		// for (OPERATION op : OPERATION.values()) {
-		// OperationInstance oi = m.new OperationInstance(op, index);
-		for (OperationInstance oi : m.ois) {
-			m.apply(oi);
-			Matrix result = solveSeriallyInternal();
-			m.unapply(oi);
-			// }
+		return doSolveSeriallyInternalNextStep();
+	}
+	
+	private Matrix doSolveSeriallyInternalNextStep() {
+		
+		OperationInstance prevOIA = null;
+		OperationInstance prevOIB = null;
+		List<OperationInstance> opsLog2 = opsLog;
+		if (opsLog.size() > 0) {
+			prevOIA = opsLog.get(opsLog.size() - 1);
+		} 
+		if (opsLog.size() > 1) {
+			prevOIB = opsLog.get(opsLog.size() - 2);
 		}
-		// TODO return proper matrix
-		Matrix winner = m.maxScorers.get(0);
-		winner.tries = m.tries;
-		winner.maxScorers = m.maxScorers;
-		return winner;
 
-		// System.gc();
+		for (OperationInstance oi : ois) {
+			//no more than 2 of the same oi adjacent
+			if (prevOIA != prevOIB || (oi != prevOIA || oi != prevOIB)) {
+				
+				if (	//make sure all segments of the same type (row/col) are in ascending order. Order doesn't matter, so only calculate for those with ascending order)
+						(prevOIA == null) //no previous OI, so always go.
+						||
+						(oi.op.isRow != prevOIA.op.isRow) // row after col or col after row always go
+						||
+						(oi.op.isRow == prevOIA.op.isRow && oi.index > prevOIA.index) // row after row should ascend, same for col after col. leaves only 43% of tries!
+						||
+						(oi.op.isRow == prevOIA.op.isRow && oi.index == prevOIA.index && (oi.op.isPositive == prevOIA.op.isPositive)) //CU_0 CD_0 not useful as they compensate eachother. leaves 39% of tries
+						
+						) {
+							//the above are pure optimizations. All possible outcomes are still calculated/scored.
+							//the below are "fuzzy" optimizations. Skipping possible valid opsLogs, so best solution might not be found, but will give a good indication that might be enough to solve it manually afterwards.
+						if (!USE_FUZZY_SKIPPING || !USE_FUZZY_RANDOM_SKIP || Math.random() * 100 > USE_FUZZY_RANDOM_SKIP_PERCENTAGE) {
+							apply(oi);
+							Matrix result = solveSeriallyInternal();
+							unapply(oi);
+						}
+				}
+			 }
+		}
+
+		Matrix winner = ((Matrix)maxScorersSet.toArray()[0]);
+		winner.tries = tries;
+		winner.maxScorersSet = maxScorersSet;
+		return winner;
 	}
 
 	public Matrix compute() {
@@ -538,10 +730,12 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 				this.tries++;
 				if (COUNT_ATOMIC)
 					triesGlobal.getAndIncrement();
+				this.found = System.currentTimeMillis();
+
 				return this;
 			}
 			Matrix m1 = (Matrix) this.copy();
-			// deafult all ois
+			// by default ois is now all ois
 			// apply ois before computing
 			m1.apply(ois.get(0));
 			return m1.compute();
@@ -550,57 +744,27 @@ public abstract class Matrix extends RecursiveTask<Matrix> {
 				// multiple ops, so fork
 				List<RecursiveTask<Matrix>> tasks = new ArrayList<RecursiveTask<Matrix>>();
 
-				int numOfCores = Runtime.getRuntime().availableProcessors();
-				int segmentSize = (ois.size() / numOfCores)
-						+ ((ois.size() % numOfCores) > 0 ? 1 : 0);
-
-				// for(int i = 0; i < numOfCores; i++) {
-				// Matrix m1 = this.duplicate();
-				// //only one ois
-				// m1.ois = ois.subList(i * segmentSize, Math.min(ois.size(),
-				// (i+1) * segmentSize));
-				// System.out.println("ois=" + m1.ois);
-				// tasks.add(m1);
-				// }
-
-				for (OperationInstance oi : ois) {
-					Matrix m1 = this.copy();
-					// only one ois
-					m1.ois = Collections.singletonList(oi);
-					System.out.println("ois=" + m1.ois);
-					tasks.add(m1);
+				for (List<OperationInstance> headStart: headStarts) {
+					for (OperationInstance oi : ois) {
+						Matrix m1 = this.copy();
+						// only one ois
+						m1.ois = Collections.singletonList(oi);
+						m1.apply(headStart);
+						m1.headStarts = new ArrayList<List<OperationInstance>>();
+						tasks.add(m1);
+					}
 				}
 
 				// will return when all are done.
 				List<RecursiveTask<Matrix>> results = (List<RecursiveTask<Matrix>>) invokeAll(tasks);
 
-				int maxScore = -1;
-				long sumTries = 0;
-				Matrix winner = null;
-				List<Matrix> maxScorers = new ArrayList<Matrix>();
+				List<Matrix> partialResults = new ArrayList<Matrix>();
 				for (RecursiveTask<Matrix> task : results) {
 					Matrix m = task.getRawResult();
-					int score = m.score();
-					sumTries += m.tries;
-					if (score >= maxScore) {
-						if (score > maxScore) {
-							maxScorers.clear();
-						}
-						maxScore = score;
-						maxScorers.add(m);
-						winner = m;
-						winner.maxScore = score;
-						winner.maxScorers = maxScorers;
-						// System.out.println("fj: new max score for: " +
-						// winner.data + " opsLog " + winner.opsLog + " score: "
-						// + score);
-					}
-					// System.out.println("fj: LOWER score for: " + winner.data
-					// + " opsLog " + winner.opsLog + " score: " + score);
+					partialResults.add(m);
 				}
-				winner.tries = sumTries;
-				winner.start = start;
-				return winner;
+
+				return joinResults(partialResults);
 			} else {
 				// too few stepsLeft, so compute serially.
 				Matrix partWinner = solveSeriallyInternal();
