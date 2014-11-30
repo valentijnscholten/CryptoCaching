@@ -1,4 +1,4 @@
-package nl.scholten.crypto.cryptobox;
+package nl.scholten.crypto.cryptobox.util;
 
 import java.lang.reflect.Field;
 

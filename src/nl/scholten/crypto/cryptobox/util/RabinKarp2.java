@@ -1,4 +1,4 @@
-package nl.scholten.crypto.cryptobox;
+package nl.scholten.crypto.cryptobox.util;
 
 // this code implements the Rabin-Karp algorithm for finding a pattern P
 // within a text T. It generates random text and pattern strings of the

@@ -1,4 +1,4 @@
-package nl.scholten.crypto.cryptobox;
+package nl.scholten.crypto.cryptobox.util;
 
 public class RabinKarp3 {
     // Hashes that simply take the int value of a character

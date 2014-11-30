@@ -1,4 +1,4 @@
-package nl.scholten.crypto.cryptobox;
+package nl.scholten.crypto.cryptobox.util;
 
 /***************************************************************
  *  Compilation:  javac RabinKarp.java

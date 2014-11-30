@@ -1,11 +1,12 @@
-package nl.scholten.crypto.cryptobox;
+package nl.scholten.crypto.cryptobox.data;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("serial")
-public class CryptoBox4Matrix extends CryptoBoxMatrix {
+public class Crypto4 extends CryptoBoxMatrix {
 
 	private static String INPUT = "UAEIOMETEREIRRHOHNTGTHEVPROJSLEETIVPNAECHIERDCAOOFNTPTDRIERENARONTZEDEENUADENEVENGCJFZENENBVAATMETVE";
 	public static String[] HITS = new String[] { "NOORD", "OOST", 
@@ -29,37 +30,17 @@ public class CryptoBox4Matrix extends CryptoBoxMatrix {
 	private static int STEPS = 14; // hint from Cache owner
 //	private static int STEPS = 16;
 
-	public CryptoBox4Matrix() {
-		super(INPUT, SIZE, STEPS, HITS, BEGINNINGS, ENDINGS, HEAD_STARTS);
+	public Crypto4() {
+		super(INPUT, SIZE, STEPS, Arrays.asList(HITS), Arrays.asList(BEGINNINGS), Arrays.asList(ENDINGS), HEAD_STARTS);
 	}
 
-	public CryptoBox4Matrix(String input) {
-		super(input, SIZE, STEPS, HITS, BEGINNINGS, ENDINGS, HEAD_STARTS);
-	}
-
-	public CryptoBox4Matrix(CryptoBox4Matrix m) {
-		super(m);
-	}
-
-	protected boolean isSolved() {
-		boolean solved = true;
-
-		solved = getRow(0).startsWith("NOORD");
-		if (!solved)
-			return false;
-
-		return solved;
-	}
-
-	@Override
-	protected Matrix copy() {
-		Matrix result = new CryptoBox4Matrix(this);
-		return result;
+	public Crypto4(String input) {
+		super(input, SIZE, STEPS, Arrays.asList(HITS), Arrays.asList(BEGINNINGS), Arrays.asList(ENDINGS), HEAD_STARTS);
 	}
 
 	public static void main(String[] args) throws IOException {
-		Matrix org = new CryptoBox4Matrix(INPUT);
-		Matrix m = new CryptoBox4Matrix(INPUT);
+		CryptoBoxMatrix org = new Crypto4(INPUT);
+		CryptoBoxMatrix m = new Crypto4(INPUT);
 
 		// m.solveSerially();
 		m.solveFJ();
