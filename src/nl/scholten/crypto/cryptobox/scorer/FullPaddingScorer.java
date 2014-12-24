@@ -4,7 +4,7 @@ import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class PaddingScorer implements CryptoBoxScorer {
+public class FullPaddingScorer implements CryptoBoxScorer {
 
 	private int x_paddings;
 	private boolean forceXPadMatch;

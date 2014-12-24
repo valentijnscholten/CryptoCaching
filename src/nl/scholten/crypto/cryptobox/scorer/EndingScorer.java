@@ -9,6 +9,10 @@ public class EndingScorer implements CryptoBoxScorer {
 	private List<String> endings;
 	private boolean forceEndMatch;
 
+	public EndingScorer(List<String> endings) {
+		this.endings = endings;
+	}
+
 	@Override
 	public int score(CryptoBoxMatrix matrix) {
 		int result = 0;

@@ -9,6 +9,10 @@ public class BeginningScorer implements CryptoBoxScorer {
 	private List<String> beginnings;
 	private boolean forceBeginMatch;
 
+	public BeginningScorer(List<String> beginnings) {
+		this.beginnings = beginnings;
+	}
+
 	@Override
 	public int score(CryptoBoxMatrix matrix) {
 		int result = 0;

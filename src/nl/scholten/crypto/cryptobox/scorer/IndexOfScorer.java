@@ -7,7 +7,12 @@ import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 public class IndexOfScorer implements CryptoBoxScorer {
 
 	private List<String> hits;
-	
+
+	public IndexOfScorer(List<String> hits) {
+		super();
+		this.hits = hits;
+	}
+
 	@Override
 	public int score(CryptoBoxMatrix matrix) {
 		int result = 0;
@@ -17,8 +22,7 @@ public class IndexOfScorer implements CryptoBoxScorer {
 			}
 		}
 
-		// System.out.println("scored: " + opsLog + " score: " +
-		// StringUtils.leftPad(String.valueOf(result), 4) + " data: " + data);
+//		System.out.println("scored: " + matrix.data + " " + StringUtils.leftPad(String.valueOf(result), 4));
 		return result;
 	}
 }

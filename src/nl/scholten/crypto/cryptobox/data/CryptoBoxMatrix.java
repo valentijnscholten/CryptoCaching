@@ -50,41 +50,25 @@ public class CryptoBoxMatrix {
 	public String data;
 	private char[] dataArray;
 
-//	public List<OperationInstance> opsLog;
-	
 	public int size;
-//	public int steps;
-	
-//	public int score;
-//	public int scoreDetailed;
 
 	public CryptoBoxMatrix(String input, int size) {
 		init(size, 
-//				0, 
-//				-1, 
-//				-1, 
-//				null, 
 				input);
 	}
 	
 	public void init(	int size, 
-//						int steps, 
-//						int score, 
-//						int scoreDetailed, 
-//						List<OperationInstance> opsLog, 
 						String data) {
 		this.size = size;
-//		this.score = -1;
-//		this.opsLog = new ArrayList<CryptoBoxMatrix.OperationInstance>(opsLog);
 
 		// deep copy
 		this.data = new String(data.toCharArray());
 		// hacketiy hack to get access to the char[] as well.
 		Field field;
 		try {
-			field = data.getClass().getDeclaredField("value");
+			field = this.data.getClass().getDeclaredField("value");
 			field.setAccessible(true);
-			this.dataArray = ((char[]) field.get(data));
+			this.dataArray = ((char[]) field.get(this.data));
 		} catch (NoSuchFieldException | SecurityException
 				| IllegalArgumentException | IllegalAccessException e) {
 			throw new RuntimeException();
@@ -93,25 +77,15 @@ public class CryptoBoxMatrix {
 	
 	public CryptoBoxMatrix(CryptoBoxMatrix m) {
 		this.init(m.size, 
-//				0, 
-//				m.score, 
-//				m.scoreDetailed, 
-//				null, 
 				m.data);
 	}
 
-	public String getScoreString() {
-//		return StringUtils.leftPad(String.valueOf(score),  4) + ":" + StringUtils.leftPad(String.valueOf(scoreDetailed),  4);
-		return "";
-	}
-	
 	public String toString() {
-		return getScoreString() + " " + data;
+		return data;
 	}
 
 	public String toStringPretty() {
-		StringBuilder result = new StringBuilder(getScoreString());
-		result.append("\n");
+		StringBuilder result = new StringBuilder();
 		String[] rows = data.split("(?<=\\G.{" + size + "})");
 
 		for (String row : rows) {
@@ -186,10 +160,6 @@ public class CryptoBoxMatrix {
 	}
 
 	public void apply(OperationInstance oi) {
-//		opsLog.add(oi);
-//		steps++;
-		// System.out.println("applying " + oi + " opsLog is now: " + opsLog);
-
 		switch (oi.op) {
 
 		case CU:
@@ -211,9 +181,6 @@ public class CryptoBoxMatrix {
 	}
 
 	public void unapply(OperationInstance oi) {
-		// System.out.println("unapplying " + oi);
-//		opsLog.remove(opsLog.size() - 1);
-//		steps--;
 
 		switch (oi.op) {
 
@@ -253,8 +220,6 @@ public class CryptoBoxMatrix {
 
 		for (int row = 0; row < matrices[0].size; row++) {
 			for (CryptoBoxMatrix m : matrices) {
-				
-				if (row == 0) result.append(m.getScoreString() + "\n");
 				
 				if (result.length() > 0
 						&& result.charAt(result.length() - 1) != '\n')

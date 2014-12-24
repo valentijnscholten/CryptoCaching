@@ -40,418 +40,179 @@ package nl.scholten.crypto.cryptobox.solver;
  * shiftormismatch even slower and bad results.
  * plain java regex is 10 times slower!
  * 
- */import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+ */
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
 
-import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
-import nl.scholten.crypto.cryptobox.data.OPERATION;
+import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
+import nl.scholten.crypto.cryptobox.data.MatrixState;
 import nl.scholten.crypto.cryptobox.data.OperationInstance;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 
+public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 
-@SuppressWarnings("serial")
-public class CryptoBoxSerialSolver {
-
-	private AtomicLong triesGlobal = new AtomicLong();
-	protected AtomicLong maxScoreGlobal = new AtomicLong();
-	
-	private static final int MAX_MAX_SCORERS = 10;
-
-//	public final static boolean USE_FUZZY = true;
-	public final static boolean USE_FUZZY = false;
-	public final static boolean USE_FUZZY_RANDOM_SKIP = true;
-	public final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
-	public final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 70; //at 70% I was still able to get a good enough solution for 1 & 2 
-			
-	public final static boolean COUNT_ATOMIC = true;
-	public final static boolean GATHER_DUPLICATES = false;
-	public final static boolean CACHE_SCORES = false;
-	public final static boolean USE_INTERN = false;
-	
-	private static final boolean DO_BEGIN_MATCH = true;
-	private static final boolean DO_END_MATCH = true;
-	private static final boolean DO_X_PAD_MATCH = true;
-
-	private static final boolean FORCE_BEGIN_MATCH = false;
-	private static final boolean FORCE_END_MATCH = false;
-	private static final boolean FORCE_X_PAD_MATCH = false;
-
-	private static final boolean USE_ARRAY_FOR_HITS = false;
-
-	private static final boolean SCORE_BY_SCAN_FROM_START = false;
-	// /TODO calculate these ? or make sure all words match these sizes by
-	// splitting them up if needed?
-	private static final int MIN_WORD_SIZE = 3;
-	private static final int MAX_WORD_SIZE = 6;
-
-	private static final boolean SCORE_BY_COUNT_MATCHES = true;
-//	private static final boolean SCORE_BY_COUNT_MATCHES = false;
-	private static final boolean REWARD_FIRST_OCCURRENCE_OF_WORD = false; // slows
-																			// down
-	private static final boolean SCORE_JAVA_REGEX = false;
-//	private static final boolean SCORE_JAVA_REGEX = true;
-	private static final boolean SCORE_EXPERIMENTAL = false;
-
-	protected List<String> hits, beginnings, endings;
-	protected Set<String> hitsSet;
-	protected Set<String> words;
-	protected List<List<OperationInstance>> headStarts;
-	protected Pattern hitsPattern;
-	protected int x_paddings;
-	protected String x_padding;
-
-	public final static List<OperationInstance> oisAll = new ArrayList<OperationInstance>();
 	private static final List<OperationInstance> EMPTY_HEAD_START = new ArrayList<OperationInstance>();
-	
-	public List<OperationInstance> ois;
-	public ArrayList<OperationInstance> opsLog;
 
-	protected String data;
-	protected char[] dataArray;
-
-	private int stepsLeft;
-
-	protected int size;
-	private long tries;
-	private long startTime;
-
-	protected int maxScore;
-	protected Set<CryptoBoxSerialSolver> maxScorersSet;
-	private int serialStepsLeft;
-	private Double bruteTries;
-	
-	Map<String, List<List<OperationInstance>>> duplicates = new HashMap<String, List<List<OperationInstance>>>();
-	Map<String, Integer> scoreCache = new HashMap<String, Integer>();
-
-
-	private synchronized List<OperationInstance> getOisAll() {
-		//make sure we only have one OI of each possibility.
-		if (oisAll.isEmpty()) {
-			for (OPERATION op : OPERATION.values()) {
-				
-				for (int j = 0; j < size; j++) {
-	//			for (int j = size - 1; j >=0; j--) {			
-					oisAll.add(new OperationInstance(op, j));
-				}
-			}
-	
-			//TODO select random order to have different initial results in different runs?
-			if (USE_FUZZY && USE_FUZZY_RANDOM_KEY_ORDER) {
-				long seed = System.nanoTime();
-				Collections.shuffle(oisAll, new Random(seed));
-			}
-		}
-		return oisAll;
+	public CryptoBoxSerialSolver() {
+		super();
 	}
 
 	public void preStart() {
-		duplicates = new HashMap<String, List<List<OperationInstance>>>();
-		scoreCache = new HashMap<String, Integer>();
-		triesGlobal = new AtomicLong();
-		maxScoreGlobal = new AtomicLong();
-		CryptoBoxSerialSolver m = this;
-		m.tries = 0;
-		m.startTime = System.currentTimeMillis();
-	}
-	
-	
-	@SuppressWarnings("unchecked")
-	private void printDuplicates() {
-		int i = 0;
-		for (Map.Entry<String, List<List<OperationInstance>>> entry: duplicates.entrySet()) {
-			if (entry.getValue().size() > 1) {
-				System.out.println(entry.getValue());
-				i++;
-			}
-		}
-		System.out.println("Duplicates: " + i);
-		
-	}
-	
-	private void logResult(MatrixResult result) {
-		long now = System.currentTimeMillis();
-		
-		System.out.println("Total tries serial: " + winner.tries + " maxScore: "
-				+ winner.maxScore + " total time " + (((now-winner.start)<60000)?(now-winner.start) + "ms.":((now - winner.start) / 1000) + "s.")
-				+ " which is " + ((winner.tries * 1000) / (Math.max(1,now - winner.start)))
-				+ " tries per second. solution found after: " + (((winner.found-winner.start)<60000)?(winner.found-winner.start) + "ms.":((winner.found - winner.start) / 1000) + "s.")
-				+ "maxScorers: "
-				+ ((CryptoBoxSerialSolver)winner.maxScorersSet.toArray()[0]).opsLog);
-		
-		System.out.println("maxScorers: " + winner.maxScorersSet.size() + ": "+ winner.maxScorersSet);
-		
-		for (CryptoBoxSerialSolver maxScorer: winner.maxScorersSet){
-			System.out.println(maxScorer.opsLog);
-		}
-		
-		System.out.println(triesGlobal.get() + " / " + bruteTries.longValue() + " = " + (triesGlobal.get() * 100 / bruteTries.longValue()) + "%");
-		
-		if (GATHER_DUPLICATES) {
-			printDuplicates();
-		}
-	}
-	
-	public MatrixResult solve(CryptoBoxMatrix m, int steps) {
-		System.out.println("Starting serially");
-		preStart();
-		MatrixResult result = solveSeriallyInternal(m, steps);
-
-		logResult(result);
-		return result;
+		Validate.notNull(getScorer(), "scorer cannot be null");
+		Validate.notNull(getStartMatrix(), "startMatrix cannot be null");
+		Validate.isTrue(getStartMatrix().size > 0, "size must be above 0");
+		Validate.isTrue(steps > 0, "steps must be above 0");
 	}
 
-	private MatrixResult solveSeriallyInternal(CryptoBoxMatrix m, int steps) {
-		//no headstart -> use empty headstart
+	public CryptoBoxResult solve() {
+		CryptoBoxResult winner = solveContinueFrom(new MatrixState(startMatrix, steps));
+		logResult(winner);
+		return winner;
+	}
+
+	private CryptoBoxResult solveSeriallyInternal(MatrixState state) {
+		Double bruteTries = Math.pow(getOisAll(startMatrix.size).size(), steps);
+
+		// no headstart -> use empty headstart
 		if (headStarts == null || headStarts.isEmpty()) {
-			return solvedSeriallyInternalHeadStart(new MatrixResult(), new MatrixState(m, steps), EMPTY_HEAD_START);
+			return solvedSeriallyInternalHeadStart(new CryptoBoxResult(state.matrix.size, bruteTries.longValue()),
+					state, EMPTY_HEAD_START);
 		}
-		
-		List<MatrixResult> partialResults = new ArrayList<MatrixResult>();
-		for(List<OperationInstance> headStart: headStarts) {
-			
-			MatrixState state = new MatrixState(m, steps);
-			
-			partialResults.add(solvedSeriallyInternalHeadStart(new MatrixResult(), state, headStart));
-		}
-		
-		return joinResults(partialResults);
-	}
-	
-	private MatrixResult solvedSeriallyInternalHeadStart(MatrixResult intermediateResult, MatrixState state, List<OperationInstance> headStart) {
-		//apply headstart (can be empty)
-		state.matrix.apply(headStart);
-		
-		//if no steps left, do scoring
-		if (stepsLeft == 0) {
-			if (!CACHE_SCORES || !scoreCache.containsKey(data)) {
-				doScoring();
-			}
-					
-			logProgress(this, false);
 
-			CryptoBoxSerialSolver winner = ((CryptoBoxSerialSolver)maxScorersSet.toArray()[0]);
-			return winner;
+		List<CryptoBoxResult> partialResults = new ArrayList<CryptoBoxResult>();
+		for (List<OperationInstance> headStart : headStarts) {
+			partialResults.add(solvedSeriallyInternalHeadStart(
+					new CryptoBoxResult(state.matrix.size, bruteTries.longValue()), state, headStart));
 		}
-		
-		//else perform next step
+
+		return CryptoBoxResult.joinResults(partialResults);
+	}
+
+	private CryptoBoxResult solvedSeriallyInternalHeadStart(
+			CryptoBoxResult intermediateResult, MatrixState state,
+			List<OperationInstance> headStart) {
+		// apply headstart (can be empty)
+		state.apply(headStart);
+
+		// if no steps left, do scoring
+		if (state.stepsLeft == 0) {
+			doScoring(intermediateResult, state);
+
+			logProgress(intermediateResult, state, false);
+
+			return intermediateResult;
+		}
+
+		// else perform next step
 		return doSolveSeriallyInternalNextStep(intermediateResult, state);
 	}
-	
-	private MatrixResult joinResults(List<MatrixResult> partialResults) {
-		int joinedMaxScore = -1;
-		long sumTries = 0;
-		Set<MatrixState> joinedMaxScorers = new HashSet<MatrixState>();
-		MatrixResult winner = new MatrixResult();
-		for(MatrixResult partialResult: partialResults){
-			
-			sumTries += partialResult.tries;
-			
-			if (partialResult.maxScore >= joinedMaxScore) {
-				
-				if (partialResult.maxScore > joinedMaxScore) {
-					joinedMaxScorers.clear();
-				}
 
-				joinedMaxScorers.addAll(partialResult.maxScorersSet);
+	private CryptoBoxResult doSolveSeriallyInternalNextStep(
+			CryptoBoxResult intermediateResult, MatrixState state) {
 
-				winner.foundTime = partialResult.foundTime;
-				
-				System.out.println("join: new max score " + partialResult.maxScore + " for: " +
-						partialResult.maxScorersSet);
-			}
-		}
-		winner.tries = sumTries;
-		winner.maxScorersSet = new HashSet<MatrixState>(joinedMaxScorers);
-		winner.startTime = winner.startTime;
-
-		return winner;
-		
-	}
-
-	private MatrixResult doSolveSeriallyInternalNextStep(MatrixResult intermediateResult, MatrixState state) {
-		
 		OperationInstance prevOIA = null;
 		OperationInstance prevOIB = null;
-		List<OperationInstance> opsLog2 = opsLog;
-		if (opsLog.size() > 0) {
-			prevOIA = opsLog.get(opsLog.size() - 1);
-		} 
-		if (opsLog.size() > 1) {
-			prevOIB = opsLog.get(opsLog.size() - 2);
+		if (state.opsLog.size() > 0) {
+			prevOIA = state.opsLog.get(state.opsLog.size() - 1);
+		}
+		if (state.opsLog.size() > 1) {
+			prevOIB = state.opsLog.get(state.opsLog.size() - 2);
 		}
 
-		for (OperationInstance oi : ois) {
-			//no more than 2 of the same oi adjacent
+		for (OperationInstance oi : getOisAll(state.matrix.size)) {
+			// no more than 2 of the same oi adjacent
 			if (prevOIA != prevOIB || (oi != prevOIA || oi != prevOIB)) {
-				
-				if (	//make sure all segments of the same type (row/col) are in ascending order. Order doesn't matter, so only calculate for those with ascending order)
-						(prevOIA == null) //no previous OI, so always go.
-						||
-						(oi.op.isRow != prevOIA.op.isRow) // row after col or col after row always go
-						||
-						(oi.op.isRow == prevOIA.op.isRow && oi.index > prevOIA.index) // row after row should ascend, same for col after col. leaves only 43% of tries!
-						||
-						(oi.op.isRow == prevOIA.op.isRow && oi.index == prevOIA.index && (oi.op.isPositive == prevOIA.op.isPositive)) //CU_0 CD_0 not useful as they compensate eachother. leaves 39% of tries
-						
-						) {
-							//the above are pure optimizations. All possible outcomes are still calculated/scored.
-							//the below are "fuzzy" optimizations. Skipping possible valid opsLogs, so best solution might not be found, but will give a good indication that might be enough to solve it manually afterwards.
-						if (!USE_FUZZY || !USE_FUZZY_RANDOM_SKIP || Math.random() * 100 > USE_FUZZY_RANDOM_SKIP_PERCENTAGE) {
-							state.matrix.apply(oi);
-							solvedSeriallyInternalHeadStart(intermediateResult, state, EMPTY_HEAD_START);
-							state.matrix.unapply(oi);
-						}
+
+				if ( // make sure all segments of the same type (row/col) are in
+						// ascending order. Order doesn't matter, so only
+						// calculate for those with ascending order)
+				(prevOIA == null) // no previous OI, so always go.
+						|| (oi.op.isRow != prevOIA.op.isRow) // row after col or
+																// col after row
+																// always go
+						|| (oi.op.isRow == prevOIA.op.isRow && oi.index > prevOIA.index) // row
+																							// after
+																							// row
+																							// should
+																							// ascend,
+																							// same
+																							// for
+																							// col
+																							// after
+																							// col.
+																							// leaves
+																							// only
+																							// 43%
+																							// of
+																							// tries!
+						|| (oi.op.isRow == prevOIA.op.isRow
+								&& oi.index == prevOIA.index && (oi.op.isPositive == prevOIA.op.isPositive)) // CU_0
+																												// CD_0
+																												// not
+																												// useful
+																												// as
+																												// they
+																												// compensate
+																												// eachother.
+																												// leaves
+																												// 39%
+																												// of
+																												// tries
+
+				) {
+					// the above are pure optimizations. All possible outcomes
+					// are still calculated/scored.
+					// the below are "fuzzy" optimizations. Skipping possible
+					// valid opsLogs, so best solution might not be found, but
+					// will give a good indication that might be enough to solve
+					// it manually afterwards.
+					if (!USE_FUZZY
+							|| !USE_FUZZY_RANDOM_SKIP
+							|| Math.random() * 100 > USE_FUZZY_RANDOM_SKIP_PERCENTAGE) {
+						state.apply(oi);
+						solvedSeriallyInternalHeadStart(intermediateResult,
+								state, EMPTY_HEAD_START);
+						state.unapply(oi);
+					}
 				}
-			 }
+			}
 		}
 
 		return intermediateResult;
 	}
 
-	public static <X, Y> List<Y> putOrCreate(Map<X, List<Y>> map, X key, Y value) {
-		List<Y> result = map.get(key);
-		if (result == null) {
-			result = new ArrayList<Y>();
-			map.put(key, result);
-		}
-		result.add(value);
-		return result;
-	}
-
-	/**
-	 * Based on opsLog we can immediately see some solutions that are duplicates
-	 * of others. 1: if all operations are row operations on mutual exclusive
-	 * columns, the order doesn't matter. So only use the one where indexes are
-	 * ascending.
-	 * 
-	 * @return
-	 */
-	public boolean isDuplicate() {
-		if (!CACHE_SCORES && !USE_INTERN)
-			return false;
-
-		if (CACHE_SCORES && duplicates.containsKey(data))
-			return true;
-
-		if (USE_INTERN) {
-			String newData = new String(data.toCharArray());
-			// if this data value was interned before, it was scored before so
-			// duplicate
-			if (newData.intern() != newData)
-				return true;
-		}
-		return false;
-
-	}
-
-	private void logProgress(CryptoBoxSerialSolver m, boolean force) {
-		long now = System.currentTimeMillis();
-		long effectiveTries = m.tries;
-		if (!force) {
-			if (COUNT_ATOMIC) {
-				effectiveTries = triesGlobal.get();
-			}
-		}
-		if (force || effectiveTries % 10000000l == 0) {
-			System.out.println("Current tries: " + effectiveTries + " ("
-					+ (effectiveTries * 100 / bruteTries.longValue())
-					+ "%) which is " + (effectiveTries * 1000)
-					/ (Math.max(1, now - m.startTime))
-					+ " tries/second. maxScore: " + m.maxScore + " state: "
-
-					+ m.opsLog + ((CryptoBoxSerialSolver)m.maxScorersSet.toArray()[0]).opsLog + m.maxScorersSet);
-			System.out.println("current data: " + ((CryptoBoxSerialSolver)m.maxScorersSet.toArray()[0]).data + " " + m.toString());
-		}
-	}
-
-	private void doScoring() {
+	private void doScoring(CryptoBoxResult partialResult, MatrixState state) {
 		// if already cache, ignore
-		int score = score();
-		if (CACHE_SCORES)
-			scoreCache.put(new String(data.toCharArray()), score);
+		int score = getScorer().score(state.matrix);
 
-		tries++;
-		if (COUNT_ATOMIC)
-			triesGlobal.getAndIncrement();
+		// System.out.println("scored: " + state);
 
-		processScore(score);
-		
-		if (GATHER_DUPLICATES) {
-			if (score > 0) {
-				CryptoBoxSerialSolver m2 = new CryptoBoxSerialSolver(this);
-				putOrCreate(duplicates, m2.data, m2.opsLog);
-			}
-		}
+		processScore(partialResult, state, score);
+
 	}
 
-	private void processScore(int score) {
-		long maxglobal = maxScoreGlobal.get();
-		if (score >= maxglobal) {
-			// we have to make sure another thread hasn't found a different high
-			// score which might get overwritten by us
-			if (maxScoreGlobal.compareAndSet(maxglobal, score)) {
-				final CryptoBoxSerialSolver winner;
-				if (score > maxScore) {
-					maxScorersSet.clear();
+	private void processScore(CryptoBoxResult partialResult, MatrixState state,
+			int score) {
+		state.score = score;
+		partialResult.merge(state);
 
-					maxScore = score;
-					found = System.currentTimeMillis();
-					winner = new CryptoBoxSerialSolver(this);
-					
-					// store winner for future reference.
-					if (maxScorersSet.size() < MAX_MAX_SCORERS) {
-						// don't add to much scorers otherwise out of memory. if
-						// there are more than 10, probably the right one isn't in
-						// there.
-						maxScorersSet.add(winner);
-					}
-
-				} else {
-					//equal score, so do detailedScoring to determine winner
-					maxScorersSet.add(new CryptoBoxSerialSolver(this));
-					//filter set
-					
-					Set<CryptoBoxSerialSolver> newMaxScorers = new HashSet<CryptoBoxSerialSolver>();
-					int newMaxScore = -1;
-					for (CryptoBoxSerialSolver m: maxScorersSet) {
-						int scoreDetailed = m.scoreDetailed();
-						if (scoreDetailed > newMaxScore) {
-							newMaxScore = scoreDetailed; 
-							newMaxScorers.clear();
-							newMaxScorers.add(m);
-						} else if (scoreDetailed == newMaxScore) {
-							newMaxScorers.add(m);
-						} else {
-							//lower score, so ignore.
-						}
-					}
-					maxScorersSet = newMaxScorers;
-					maxScore = newMaxScore;
-				}
-
-
-				if (score >= maxglobal) {
-					long now = System.currentTimeMillis();
-					System.out.println("serial: new max score "
-							+ StringUtils.leftPad(String.valueOf(maxScore), 4)
-							+ "(" + (now - startTime) + "ms.)"
-							+ " for: " + opsLog + " " + data + "\n"
-							+ toStringPretty());
-					logProgress(this, true);
-				}
-			}
-		}
 	}
-	
 
-	
+	@Override
+	public CryptoBoxResult solveContinueFrom(MatrixState state2) {
+		System.out.println("Starting serially");
+		this.steps = state2.stepsLeft;
+
+		preStart();
+
+		MatrixState state = new MatrixState(state2);
+		//count existing opslog to make bruteTries correct.
+		steps = state.opsLog.size() + steps;
+		CryptoBoxResult winner = solveSeriallyInternal(state);
+
+//		logResult(winner);
+		return winner;
+	}
+
 }
