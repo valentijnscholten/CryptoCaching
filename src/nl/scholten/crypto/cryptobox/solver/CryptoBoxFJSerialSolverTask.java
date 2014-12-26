@@ -1,8 +1,9 @@
 package nl.scholten.crypto.cryptobox.solver;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.RecursiveTask;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
@@ -19,11 +20,11 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 	private int paralellStepsLeft;
 	private MatrixState state;
 	private CryptoBoxScorer scorer;
-	private List<List<OperationInstance>> headStarts;
+	private Set<List<OperationInstance>> headStarts;
 
 	public CryptoBoxFJSerialSolverTask(List<OperationInstance> ois,
 			int stepsLeft, int paralellSteps, CryptoBoxMatrix matrix,
-			CryptoBoxScorer scorer, List<List<OperationInstance>> headStarts) {
+			CryptoBoxScorer scorer, Set<List<OperationInstance>> headStarts) {
 		super();
 		this.ois = ois;
 
@@ -35,7 +36,7 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 	}
 
 	public CryptoBoxFJSerialSolverTask(CryptoBoxFJSerialSolverTask task2) {
-		this.headStarts = new LinkedList<List<OperationInstance>>();
+		this.headStarts = new HashSet<List<OperationInstance>>();
 		this.paralellStepsLeft = task2.paralellStepsLeft;
 		this.scorer = task2.scorer;
 		this.ois = task2.ois;

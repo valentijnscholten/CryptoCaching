@@ -1,9 +1,17 @@
 package nl.scholten.crypto.cryptobox.data;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import nl.scholten.crypto.cryptobox.scorer.BeginningScorer;
+import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
+import nl.scholten.crypto.cryptobox.scorer.EndingScorer;
+import nl.scholten.crypto.cryptobox.scorer.IndexOfScorer;
+import nl.scholten.crypto.cryptobox.solver.CryptoBoxSerialSolver;
+import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 
 @SuppressWarnings("serial")
 public class Crypto4 extends CryptoBoxMatrix {
@@ -11,13 +19,13 @@ public class Crypto4 extends CryptoBoxMatrix {
 	private static String INPUT = "UAEIOMETEREIRRHOHNTGTHEVPROJSLEETIVPNAECHIERDCAOOFNTPTDRIERENARONTZEDEENUADENEVENGCJFZENENBVAATMETVE";
 	public static String[] HITS = new String[] { "NOORD", "OOST", 
 		"GRADEN", "MINUTEN", 
-		"PUNT", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF",
+		"PUNT", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF", "VYF",
 		"ZES", "ZEVEN", "ACHT", "NEGEN" };
 
 	public static String[] BEGINNINGS = new String[] {};
 	public static String[] ENDINGS = new String[] {};
 	
-	public static final List<List<OperationInstance>> HEAD_STARTS = new ArrayList<List<OperationInstance>>();
+	public static final Set<List<OperationInstance>> HEAD_STARTS = new HashSet<List<OperationInstance>>();
 	static {
 //		List<OperationInstance> headStart = new ArrayList<Matrix.OperationInstance>();
 //		headStart.add(new Matrix.OperationInstance(OPERATION.ROW_LEFT, 8));
@@ -31,19 +39,26 @@ public class Crypto4 extends CryptoBoxMatrix {
 //	private static int STEPS = 16;
 
 	public Crypto4() {
-		super(INPUT, SIZE, STEPS, Arrays.asList(HITS), Arrays.asList(BEGINNINGS), Arrays.asList(ENDINGS), HEAD_STARTS);
+		super(INPUT, SIZE);
 	}
 
 	public Crypto4(String input) {
-		super(input, SIZE, STEPS, Arrays.asList(HITS), Arrays.asList(BEGINNINGS), Arrays.asList(ENDINGS), HEAD_STARTS);
+		super(input, SIZE);
 	}
 
 	public static void main(String[] args) throws IOException {
-		CryptoBoxMatrix org = new Crypto4(INPUT);
 		CryptoBoxMatrix m = new Crypto4(INPUT);
 
-		// m.solveSerially();
-		m.solveFJ();
+
+		CombinedScorer scorer = new CombinedScorer();
+		scorer.addScorer(new IndexOfScorer(Arrays.asList(HITS)));
+		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
+		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
+
+		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
+//		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();
+		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setHeadStarts(HEAD_STARTS).solve();
+		
 	}
 
 }

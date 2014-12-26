@@ -2,9 +2,10 @@ package nl.scholten.crypto.cryptobox.solver;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
@@ -23,7 +24,8 @@ public abstract class CryptoBoxSolver {
 //	protected final static boolean USE_FUZZY = true;
 	protected final static boolean USE_FUZZY = false;
 	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
-	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
+//	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
+	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
 	protected final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 70; //at 70% I was still able to get a good enough solution for 1 & 2 
 			
 	protected final static boolean COUNT_ATOMIC = true;
@@ -49,17 +51,19 @@ public abstract class CryptoBoxSolver {
 	protected final static int MAX_MAX_SCORERS = 10;
 	
 	public static final List<OperationInstance> oisAll = new ArrayList<OperationInstance>();
-	protected List<List<OperationInstance>> headStarts;
+	
+	protected Set<List<OperationInstance>> headStarts;
 	
 	protected CryptoBoxScorer scorer;
 	protected CryptoBoxMatrix startMatrix;
 	protected int steps = -1;
+	protected List<OperationInstance> oisCurrent = new ArrayList<OperationInstance>();
 
 	public CryptoBoxSolver() {
-		this.headStarts = new LinkedList<List<OperationInstance>>();
+		this.headStarts = new HashSet<List<OperationInstance>>();
 	}
 	
-	public CryptoBoxSolver setHeadStarts(List<List<OperationInstance>> headStarts) {
+	public CryptoBoxSolver setHeadStarts(Set<List<OperationInstance>> headStarts) {
 		this.headStarts = headStarts;
 		return this;
 	}
@@ -84,6 +88,14 @@ public abstract class CryptoBoxSolver {
 
 	public CryptoBoxSolver setStartMatrix(CryptoBoxMatrix startMatrix) {
 		this.startMatrix = startMatrix;
+		if (this.oisCurrent.isEmpty()) this.oisCurrent = getOisAll(startMatrix.size);
+		return this;
+	}
+
+	public CryptoBoxSolver setOisCurrent(List<OperationInstance> oisCurrent) {
+		this.oisCurrent = oisCurrent;
+		if (this.oisCurrent.isEmpty()) this.oisCurrent = getOisAll(startMatrix.size);
+
 		return this;
 	}
 	
@@ -122,7 +134,7 @@ public abstract class CryptoBoxSolver {
 		System.out.println("maxScorers: " + result.maxScorersSet.size() + ": "+ result.maxScorersSet);
 		
 		for (MatrixState maxScorer: result.maxScorersSet){
-			System.out.println(maxScorer.opsLog);
+			System.out.println(maxScorer);
 		}
 		
 		System.out.println(result.triesGlobal.get() + " / " + result.bruteTries + " = " + (result.triesGlobal.get() * 100 / result.bruteTries.longValue()) + "%");

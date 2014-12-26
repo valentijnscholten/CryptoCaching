@@ -70,7 +70,7 @@ public class CryptoBoxResult {
 //			System.out.println("join: new (local) max score " + this.maxScore + " for: " + state);
 			
 			long maxGlobal = maxScoreGlobal.get();
-			if (state.score >= maxGlobal) {
+			if (state.score > maxGlobal) {
 				// we have to make sure another thread hasn't found a different high
 				// score which might get overwritten by us
 				if (maxScoreGlobal.compareAndSet(maxGlobal, state.score)) {

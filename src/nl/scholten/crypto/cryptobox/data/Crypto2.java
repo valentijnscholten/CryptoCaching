@@ -3,7 +3,9 @@ package nl.scholten.crypto.cryptobox.data;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import nl.scholten.crypto.cryptobox.scorer.BeginningScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
@@ -24,7 +26,7 @@ public class Crypto2 extends CryptoBoxMatrix {
 	public static String[] BEGINNINGS = new String[] { "GOEDGEDAANGANAARVIJF", "GOED" };
 	public static String[] ENDINGS = new String[] { "PUNTNEGENNEGENVIJFVALERNIETIN", "VALERNIETIN"};
 
-	public static final List<List<OperationInstance>> HEAD_STARTS = new ArrayList<List<OperationInstance>>();
+	public static final Set<List<OperationInstance>> HEAD_STARTS = new HashSet<List<OperationInstance>>();
 	static {
 		//solution [RR_5, CU_6, RL_1, CD_0, RL_4, CD_4, CU_5, RL_6]
 		List<OperationInstance> headStart = new ArrayList<OperationInstance>();
