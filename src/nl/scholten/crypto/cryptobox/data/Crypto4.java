@@ -6,10 +6,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import nl.scholten.crypto.cryptobox.scorer.BeginningScorer;
+import nl.scholten.crypto.cryptobox.scorer.BeginningLengthScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
-import nl.scholten.crypto.cryptobox.scorer.EndingScorer;
-import nl.scholten.crypto.cryptobox.scorer.IndexOfScorer;
+import nl.scholten.crypto.cryptobox.scorer.EndingLengthScorer;
+import nl.scholten.crypto.cryptobox.scorer.IndexOfLengthSquareScorer;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSerialSolver;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 
@@ -17,13 +17,15 @@ import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 public class Crypto4 extends CryptoBoxMatrix {
 
 	private static String INPUT = "UAEIOMETEREIRRHOHNTGTHEVPROJSLEETIVPNAECHIERDCAOOFNTPTDRIERENARONTZEDEENUADENEVENGCJFZENENBVAATMETVE";
-	public static String[] HITS = new String[] { "NOORD", "OOST", 
-		"GRADEN", "MINUTEN", 
+	public static String[] HITS = new String[] { "NOORD", "OOST", "PROJECTEER", "PROJECTEREN", "METER", "HONDERD", "HOOG", "EN", "JACHT", "TROFEE", "ACHTER", "UIT", "NAAR",
+		"GRADEN", "MINUTEN", "NERGENS", "PROEF", "GETAL", "HET", "VIND", "PUNTZEVENGRADEN",  "NEGENVIJFZEVENACHTMETER", "VANUIT", "LAATSTE", "MET", 
 		"PUNT", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF", "VYF",
 		"ZES", "ZEVEN", "ACHT", "NEGEN" };
 
-	public static String[] BEGINNINGS = new String[] {};
-	public static String[] ENDINGS = new String[] {};
+	public static String[] BEGINNINGS = new String[] { // "UIT", "BAROMETER" 
+		}; //?
+	public static String[] ENDINGS = new String[] { "NEGENVIJFZEVENACHTMETER", "METER"
+		}; //?
 	
 	public static final Set<List<OperationInstance>> HEAD_STARTS = new HashSet<List<OperationInstance>>();
 	static {
@@ -51,9 +53,13 @@ public class Crypto4 extends CryptoBoxMatrix {
 
 
 		CombinedScorer scorer = new CombinedScorer();
-		scorer.addScorer(new IndexOfScorer(Arrays.asList(HITS)));
-		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
-		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
+//		scorer.addScorer(new IndexOfScorer(Arrays.asList(HITS)));
+//		scorer.addScorer(new IndexOfLengthScorer(Arrays.asList(HITS)));
+		scorer.addScorer(new IndexOfLengthSquareScorer(Arrays.asList(HITS)));
+//		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
+		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(BEGINNINGS)));
+//		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
+		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));
 
 		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
 //		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();

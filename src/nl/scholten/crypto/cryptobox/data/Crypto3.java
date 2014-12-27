@@ -7,9 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import nl.scholten.crypto.cryptobox.scorer.BeginningScorer;
+import nl.scholten.crypto.cryptobox.scorer.BeginningLengthScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
-import nl.scholten.crypto.cryptobox.scorer.EndingScorer;
+import nl.scholten.crypto.cryptobox.scorer.EndingLengthScorer;
 import nl.scholten.crypto.cryptobox.scorer.IndexOfLengthSquareScorer;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSerialSolver;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
@@ -17,6 +17,7 @@ import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 @SuppressWarnings("serial")
 public class Crypto3 extends CryptoBoxMatrix {
 
+	//X,Y coordinaat original: 93566, 404389
 	private static String INPUT = "GZOELDEIBXXERFOMDEGETEDINRXNNOGEVAREDENAENARIENEDEINDEVULRYZSIZRNNUDTVEEEHTCELMREACUCENSXWTESEKICXTE"; // 5 X-es (one for boX).
 	
 //	public static String[] HITS = new String[] { "ZOEK", "GOED", "TEVREDEN",
@@ -24,12 +25,15 @@ public class Crypto3 extends CryptoBoxMatrix {
 //			"PUNT", "GRADEN", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF",
 //			"ZES", "ZEVEN", "ACHT", "NEGEN", "TIEN" };
 
-	public static String[] HITS = new String[] { "GEFELICITEERD", "OMDEBOXTEVINDEN", "OM", "DE", "BOX", "TE", "VINDEN", "GA", "NAAR", "NEGENDRIEEEN", "SUCCES", "MET", "ZOEKEN"  ,
-		"PUNT", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF", "VYF",
+	public static String[] HITS = new String[] { "GEFELICITEERD", "OMDEBOXTEVINDEN", "OM", "DE", "BOX", "TE", "VINDEN", "GA", "NAAR", "RDX", "NEGENDRIEEEN", "SUCCES", "MET", "ZOEKEN",
+		"RDY", 
+		"PUNT", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF",
 		"ZES", "ZEVEN", "ACHT", "NEGEN" };
 	
-	public static String[] BEGINNINGS = new String[] { "GEFELICITEERDOMDEBOXTEVINDENGANAAR", "GEFELICITEERD" };
-	public static String[] ENDINGS = new String[] { "ACHTNULTWEESUCCESMETZOEKENXXXX", "SUCCESMETZOEKENXXX", "XXX", "XX", "X" }; //exclude paddings
+	public static String[] BEGINNINGS = new String[] { "GEFELICITEERDOMDEBOXTEVINDENGANAARRD", "GEFELICITEERDOMDEBOXTEVINDENGANAARRDX", "GEFELICITEERD" 
+		};
+	public static String[] ENDINGS = new String[] { "SUCCESMETZOEKENXXX",  "XXX", //"XX", "X", //"ACHTNULTWEESUCCESMETZOEKENXXXX", "SUCCESMETZOEKENXXX" 
+		}; //exclude paddings
 
 	public Crypto3() {
 		super(INPUT, SIZE);
@@ -135,8 +139,10 @@ public class Crypto3 extends CryptoBoxMatrix {
 //		scorer.addScorer(new IndexOfScorer(Arrays.asList(HITS)));
 //		scorer.addScorer(new IndexOfLengthScorer(Arrays.asList(HITS)));
 		scorer.addScorer(new IndexOfLengthSquareScorer(Arrays.asList(HITS)));
-		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
-		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
+//		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
+		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(BEGINNINGS)));
+//		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
+		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));
 
 		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
 //		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();

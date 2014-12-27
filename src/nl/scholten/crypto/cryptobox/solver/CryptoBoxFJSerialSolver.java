@@ -87,7 +87,7 @@ public class CryptoBoxFJSerialSolver extends CryptoBoxSolver {
 		logResult(winner);
 
 		//expirement with permutations
-		List<OperationInstance> winnerOpsLog = winner.maxScorersSet.toArray(new MatrixState[0])[0].opsLog;
+		List<OperationInstance> winnerOpsLog = winner.maxScorerStates.toArray(new MatrixState[0])[0].opsLog;
 		OperationInstance[] winnerOpsLogArray = winnerOpsLog.toArray(new OperationInstance[0]);
 		
 		//try all permutations as headstart to see best one

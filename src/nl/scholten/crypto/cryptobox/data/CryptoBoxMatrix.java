@@ -230,5 +230,15 @@ public class CryptoBoxMatrix {
 		}
 		return result.toString();
 	}
+
+	@Override
+	public boolean equals(Object matrix2) {
+		if (matrix2 == null)
+			return false;
+		if (!(matrix2 instanceof CryptoBoxMatrix))
+			return false;
+		CryptoBoxMatrix other = (CryptoBoxMatrix) matrix2;
+		return this.data.equals(other.data) && this.size == other.size;
+	}
 	
 }

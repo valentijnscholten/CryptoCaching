@@ -1,7 +1,9 @@
 package nl.scholten.crypto.cryptobox.data;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -13,7 +15,8 @@ public class CryptoBoxResult {
 	public long foundTime;	
 
 	public int maxScore;
-	public Set<MatrixState> maxScorersSet;
+	public Set<MatrixState> maxScorerStates;
+	public Map<String, MatrixState> maxScorersUniqueResults;
 
 	public static volatile AtomicLong triesGlobal = new AtomicLong();
 	public static volatile AtomicLong maxScoreGlobal = new AtomicLong();
@@ -25,7 +28,8 @@ public class CryptoBoxResult {
 		startTime = System.currentTimeMillis();
 		foundTime = -1;
 		maxScore = -1;
-		maxScorersSet = new HashSet<MatrixState>();
+		maxScorerStates = new HashSet<MatrixState>();
+		maxScorersUniqueResults = new HashMap<String, MatrixState>();
 		triesGlobal = new AtomicLong();
 		maxScoreGlobal = new AtomicLong();
 		this.bruteTries = bruteTries;
@@ -36,18 +40,20 @@ public class CryptoBoxResult {
 		if (result2.maxScore > 0 && result2.maxScore >= this.maxScore) {
 
 			if (result2.maxScore > this.maxScore) {
-				this.maxScorersSet.clear();
+				this.maxScorerStates.clear();
+				this.maxScorersUniqueResults.clear();
 				this.foundTime = result2.foundTime;
 			} else {
 //				this.foundTime = Math.min(a, b)
 			}
 
 			this.maxScore = result2.maxScore;
-			this.maxScorersSet.addAll(result2.maxScorersSet);
-
+			this.maxScorerStates.addAll(result2.maxScorerStates);
+			//possibly overwrites existing results, but we don't care we need only one oplog per unique result
+			this.maxScorersUniqueResults.putAll(result2.maxScorersUniqueResults);
 
 			System.out.println("join: new max score " + StringUtils.leftPad(String.valueOf(result2.maxScore), 3)
-					+ " for: " + result2.maxScorersSet);
+					+ " for: " + result2.maxScorerStates);
 		}
 		this.tries += result2.tries;
 		this.startTime = Math.min(this.startTime, result2.startTime);
@@ -59,11 +65,15 @@ public class CryptoBoxResult {
 		if (state.score > 0 && state.score >= this.maxScore) {
 
 			if (state.score > this.maxScore) {
-				this.maxScorersSet.clear();
+				this.maxScorerStates.clear();
+				this.maxScorersUniqueResults.clear();
 			}
 
 			this.maxScore = state.score;
-			this.maxScorersSet.add(new MatrixState(state));
+			MatrixState newState = new MatrixState(state);
+			this.maxScorerStates.add(newState);
+			//possibly overwrites existing unique result, we don't care only need one
+			this.maxScorersUniqueResults.put(newState.matrix.data, newState);
 
 			this.foundTime = System.currentTimeMillis();
 
@@ -75,7 +85,8 @@ public class CryptoBoxResult {
 				// score which might get overwritten by us
 				if (maxScoreGlobal.compareAndSet(maxGlobal, state.score)) {
 					long now = System.currentTimeMillis();
-					System.out.println("serial: new max score " + state);
+					System.out.println("serial: new max score " + state.toString());
+//					System.out.println("serial: new max score " + state.toStringPretty());
 				}
 			}
 			
@@ -105,9 +116,9 @@ public class CryptoBoxResult {
 	
 	
 	public MatrixState getWinner() {
-		if (maxScorersSet.isEmpty()) return null;
+		if (maxScorerStates.isEmpty()) return null;
 		
-		return (MatrixState)maxScorersSet.toArray()[0];
+		return (MatrixState)maxScorerStates.toArray()[0];
 	}
 	
 	@Override
@@ -123,7 +134,10 @@ public class CryptoBoxResult {
 		result.append(" total time " + ((delta < 60000)?delta + "ms.":((delta / 1000) + "s.")));
 		result.append(" i.e. " + triesPerSecond + " tries per second");
 		result.append(" solution found after: " + ((foundDelta < 60000)?foundDelta + "ms.":(foundDelta / 1000) + "s."));
-		result.append(" maxScorers: " + this.maxScorersSet);
+		result.append(" maxScorers: " + this.maxScorerStates.size() + "(" + this.maxScorersUniqueResults.size() + " unique) ");			
+		if (this.maxScorerStates.size() <= 100) {
+			result.append(" data: " + this.maxScorerStates);
+		}
 		
 		return result.toString();
 				

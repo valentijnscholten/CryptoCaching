@@ -21,12 +21,13 @@ public abstract class CryptoBoxSolver {
 	//don't skip duplicates
 //	protected final static boolean DO_ALL_OPS_LOGS = true;
 
-//	protected final static boolean USE_FUZZY = true;
-	protected final static boolean USE_FUZZY = false;
-	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
+//	protected final static boolean USE_FUZZY = false;
+	protected final static boolean USE_FUZZY = true;
 //	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
 	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
-	protected final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 70; //at 70% I was still able to get a good enough solution for 1 & 2 
+	protected final static boolean USE_FUZZY_RANDOM_SKIP = false;
+//	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
+	protected final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 90; //at 70% I was still able to get a good enough solution for 1 & 2 
 			
 	protected final static boolean COUNT_ATOMIC = true;
 	
@@ -56,7 +57,7 @@ public abstract class CryptoBoxSolver {
 	
 	protected CryptoBoxScorer scorer;
 	protected CryptoBoxMatrix startMatrix;
-	protected int steps = -1;
+	protected long steps = -1;
 	protected List<OperationInstance> oisCurrent = new ArrayList<OperationInstance>();
 
 	public CryptoBoxSolver() {
@@ -131,11 +132,18 @@ public abstract class CryptoBoxSolver {
 	
 		System.out.println(message);
 		
-		System.out.println("maxScorers: " + result.maxScorersSet.size() + ": "+ result.maxScorersSet);
 		
-		for (MatrixState maxScorer: result.maxScorersSet){
+		int i = 0;
+		for (MatrixState maxScorer: result.maxScorerStates){
 			System.out.println(maxScorer);
+			if (i >= 100) {
+				System.out.println("...stopped after printing 100 maxscorers (" + result.maxScorerStates.size() + " total).");
+				break;
+			}
+			i++;
 		}
+		System.out.println("maxScorers: " + result.maxScorerStates.size());
+		System.out.println("maxScorersUniqueResults: " + result.maxScorersUniqueResults.size());
 		
 		System.out.println(result.triesGlobal.get() + " / " + result.bruteTries + " = " + (result.triesGlobal.get() * 100 / result.bruteTries.longValue()) + "%");
 	}
@@ -148,7 +156,7 @@ public abstract class CryptoBoxSolver {
 				effectiveTries = intermediateResult.triesGlobal.get();
 			}
 		}
-		if (force || effectiveTries % 1000000l == 0) {
+		if (force || effectiveTries % 10000000l == 0) {
 			
 //			System.out.println(state +""+  intermediateResult);
 			System.out.println(StringUtils.leftPad(String.valueOf(intermediateResult.triesGlobal.get()), 10)  + " "  + intermediateResult);

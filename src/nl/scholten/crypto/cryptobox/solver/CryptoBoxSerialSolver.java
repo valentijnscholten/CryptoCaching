@@ -71,6 +71,7 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 
 	public CryptoBoxResult solve() {
 		CryptoBoxResult winner = solveContinueFrom(new MatrixState(startMatrix, 4));
+//		CryptoBoxResult winner = solveContinueFrom(new MatrixState(startMatrix, 12));
 		logResult(winner);
 		
 //		try {System.in.read();} catch (IOException e1) {}
@@ -79,10 +80,21 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 			//try all maxscorers with 4 next steps
 			
 			Set<List<OperationInstance>> permutations = new HashSet<List<OperationInstance>>();
-			for(MatrixState winState: winner.maxScorersSet) {
+			System.out.println("Generating permutations for " + winner.maxScorerStates.size() + " maxScorers.");
+			for(MatrixState winState: winner.maxScorerStates) {
 				List<OperationInstance> winStateOpsLog = winState.opsLog;
-				if (steps > 4) {
 
+				//ignore last two of opslog ???
+				if (winStateOpsLog.size() > 4) {
+//					winStateOpsLog.remove(winStateOpsLog.size() - 1);
+//					winStateOpsLog.remove(winStateOpsLog.size() - 1);
+				}
+				
+				if (steps <= 10) {
+					if (permutations.contains(winStateOpsLog)) {
+						System.out.println("Skipping permutations of " + winStateOpsLog);
+					}
+					
 					//try all permutations of winner to find best ones
 				
 					OperationInstance[] winnerOpsLogArray = winStateOpsLog.toArray(new OperationInstance[0]);
@@ -96,25 +108,34 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 				}
 			}
 
+			System.out.println("Calculating permutation winners " + permutations.size() + " permutations.");
+
 			setHeadStarts(permutations);
-				
-			CryptoBoxResult permuWinners = solveContinueFrom(new MatrixState(startMatrix, steps));
+			
+//			CryptoBoxResult permuWinners = solveContinueFrom(new MatrixState(startMatrix, ((List<OperationInstance>)permutations.toArray()[0]).size()));
+			CryptoBoxResult permuWinners = solveContinueFrom(new MatrixState(startMatrix, steps));			
 			logResult(permuWinners);
 
 			//convert permuwinner to new headstarts
 			Set<List<OperationInstance>> permuWinnersOpsLogs = new HashSet<List<OperationInstance>>();
-			for (MatrixState permuWinner: permuWinners.maxScorersSet) {
-				permuWinnersOpsLogs.add(permuWinner.opsLog);
+
+//			for (MatrixState permuWinner: permuWinners.maxScorerStates) {
+//				permuWinnersOpsLogs.add(permuWinner.opsLog);
+//			}
+
+			for (String result: permuWinners.maxScorersUniqueResults.keySet()) {
+				permuWinnersOpsLogs.add(permuWinners.maxScorersUniqueResults.get(result).opsLog);
 			}
 
-			setHeadStarts(permuWinnersOpsLogs);
 			
-			winner = solveContinueFrom(new MatrixState(startMatrix, steps + 2));
+			System.out.println("Calculating next steps for steps=" + (steps + 4));
+			setHeadStarts(permuWinnersOpsLogs);
+			winner = solveContinueFrom(new MatrixState(startMatrix, steps + 4));
 			logResult(winner);
 		}
 		
 		//try all maxscorers with 4 next steps
-		List<OperationInstance> winnerOpsLog = winner.maxScorersSet.toArray(new MatrixState[0])[0].opsLog;
+		List<OperationInstance> winnerOpsLog = winner.maxScorerStates.toArray(new MatrixState[0])[0].opsLog;
 		OperationInstance[] winnerOpsLogArray = winnerOpsLog.toArray(new OperationInstance[0]);
 		
 		//try all permutations as headstart to see best one
@@ -131,7 +152,7 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 //		try {System.in.read();} catch (IOException e1) {}
 
 		//try all maxscorers with 4 next steps
-		for(MatrixState winState: winner.maxScorersSet) {
+		for(MatrixState winState: winner.maxScorerStates) {
 			List<OperationInstance> winStateOpsLog = winState.opsLog;
 			
 			setHeadStarts(Collections.singleton(winStateOpsLog));

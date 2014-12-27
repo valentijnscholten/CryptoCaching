@@ -7,16 +7,14 @@ import org.apache.commons.lang3.StringUtils;
 
 public class MatrixState {
 
-	public List<OperationInstance> oisLeft;
 	public List<OperationInstance> opsLog;
-
 	public CryptoBoxMatrix matrix;
 
-	protected int steps;
-	public int stepsLeft;
+	protected long steps;
+	public long stepsLeft;
 	public int score;
 	
-	public MatrixState(CryptoBoxMatrix m, int stepsLeft) {
+	public MatrixState(CryptoBoxMatrix m, long stepsLeft) {
 		this.matrix = new CryptoBoxMatrix(m);
 		this.steps = 0;
 		this.stepsLeft = stepsLeft;
@@ -35,6 +33,12 @@ public class MatrixState {
 		return StringUtils.leftPad(String.valueOf(score), 4) + " " + opsLog + " " + matrix.toString();
 	}
 
+	public String toStringPretty() {
+		return StringUtils.leftPad(String.valueOf(score), 4) + "\n" + opsLog + "\n" + matrix.toStringPretty();
+	}
+
+
+	
 	public void apply(List<OperationInstance> headStart) {
 		for (OperationInstance operationInstance: headStart) {
 			this.apply(operationInstance);
@@ -60,6 +64,18 @@ public class MatrixState {
 		opsLog.remove(opsLog.size() - 1);
 		steps--;
 		stepsLeft++;
+	}
+	
+	@Override
+	public boolean equals(Object state2) {
+		if (state2 == null)
+			return false;
+		if (!(state2 instanceof MatrixState))
+			return false;
+		// for now only compare opsLog
+		if (this.opsLog != ((MatrixState)state2).opsLog)
+			return false;
+		return true;
 	}
 	
 }

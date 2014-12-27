@@ -17,13 +17,13 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 	private static final long serialVersionUID = 1L;
 
 	private List<OperationInstance> ois;
-	private int paralellStepsLeft;
+	private long paralellStepsLeft;
 	private MatrixState state;
 	private CryptoBoxScorer scorer;
 	private Set<List<OperationInstance>> headStarts;
 
 	public CryptoBoxFJSerialSolverTask(List<OperationInstance> ois,
-			int stepsLeft, int paralellSteps, CryptoBoxMatrix matrix,
+			long stepsLeft, long paralellSteps, CryptoBoxMatrix matrix,
 			CryptoBoxScorer scorer, Set<List<OperationInstance>> headStarts) {
 		super();
 		this.ois = ois;
