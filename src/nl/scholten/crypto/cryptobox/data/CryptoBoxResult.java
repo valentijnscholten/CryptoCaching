@@ -1,11 +1,11 @@
 package nl.scholten.crypto.cryptobox.data;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -17,9 +17,6 @@ public class CryptoBoxResult {
 	public int maxScore;
 	public Set<MatrixState> maxScorerStates;
 	public Map<String, MatrixState> maxScorersUniqueResults;
-
-	public static volatile AtomicLong triesGlobal = new AtomicLong();
-	public static volatile AtomicLong maxScoreGlobal = new AtomicLong();
 	
 	public static Long bruteTries;
 	
@@ -30,8 +27,6 @@ public class CryptoBoxResult {
 		maxScore = -1;
 		maxScorerStates = new HashSet<MatrixState>();
 		maxScorersUniqueResults = new HashMap<String, MatrixState>();
-		triesGlobal = new AtomicLong();
-		maxScoreGlobal = new AtomicLong();
 		this.bruteTries = bruteTries;
 
 	}
@@ -77,16 +72,12 @@ public class CryptoBoxResult {
 
 			this.foundTime = System.currentTimeMillis();
 
-//			System.out.println("join: new (local) max score " + this.maxScore + " for: " + state);
-			
-			long maxGlobal = maxScoreGlobal.get();
+			long maxGlobal = CounterSingletons.MAXSCORE.counter.get();
 			if (state.score > maxGlobal) {
-				// we have to make sure another thread hasn't found a different high
-				// score which might get overwritten by us
-				if (maxScoreGlobal.compareAndSet(maxGlobal, state.score)) {
-					long now = System.currentTimeMillis();
-					System.out.println("serial: new max score " + state.toString());
-//					System.out.println("serial: new max score " + state.toStringPretty());
+//				// we have to make sure another thread hasn't found a different high
+//				// score which might get overwritten by us
+				if (CounterSingletons.MAXSCORE.counter.compareAndSet(maxGlobal, state.score)) {
+					System.out.println("state: new max score " + state.toString());
 				}
 			}
 			
@@ -96,7 +87,7 @@ public class CryptoBoxResult {
 			
 		}
 		this.tries += 1;
-		triesGlobal.getAndIncrement();
+		CounterSingletons.TRIES.counter.getAndIncrement();
 
 		return this;
 	}
@@ -142,6 +133,29 @@ public class CryptoBoxResult {
 		return result.toString();
 				
 	}
+
+	public static CryptoBoxResult joinResults(CryptoBoxResult[] cryptoBoxResults) {
+		List<CryptoBoxResult> partialResults = Arrays.asList(cryptoBoxResults);
+		return joinResults(partialResults);
+	}
+
+	public Set<List<OperationInstance>> getMaxScorerOpsLogs() {
+		Set<List<OperationInstance>> result = new HashSet<List<OperationInstance>>();
+		for (MatrixState state: maxScorerStates) {
+			result.add(state.opsLog);
+		}
+		return result;
+	}
+
+	public Set<List<OperationInstance>> getMaxScorerUniqueResultOpsLogs() {
+		Set<List<OperationInstance>> result = new HashSet<List<OperationInstance>>();
+		for (String matrixResult: maxScorersUniqueResults.keySet()) {
+			result.add(maxScorersUniqueResults.get(matrixResult).opsLog);
+		}
+		
+		return result;
+	}
+
 	
 }
 

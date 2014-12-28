@@ -41,134 +41,42 @@ package nl.scholten.crypto.cryptobox.solver;
  * plain java regex is 10 times slower!
  * 
  */
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
 import nl.scholten.crypto.cryptobox.data.MatrixState;
 import nl.scholten.crypto.cryptobox.data.OperationInstance;
-import nl.scholten.crypto.cryptobox.util.HeapPermute;
 
 import org.apache.commons.lang3.Validate;
 
 public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 
-	private static final List<OperationInstance> EMPTY_HEAD_START = new ArrayList<OperationInstance>();
-
 	public CryptoBoxSerialSolver() {
 		super();
+	}
+
+	public CryptoBoxSerialSolver(
+			CryptoBoxSolver solver2) {
+		super(solver2);
 	}
 
 	public void preStart() {
 		Validate.notNull(getScorer(), "scorer cannot be null");
 		Validate.notNull(getStartMatrix(), "startMatrix cannot be null");
 		Validate.isTrue(getStartMatrix().size > 0, "size must be above 0");
-		Validate.isTrue(steps > 0, "steps must be above 0");
+		Validate.isTrue(steps >= 0, "steps must be non-negative");
 	}
 
 	public CryptoBoxResult solve() {
-		CryptoBoxResult winner = solveContinueFrom(new MatrixState(startMatrix, 4));
-//		CryptoBoxResult winner = solveContinueFrom(new MatrixState(startMatrix, 12));
+		CryptoBoxResult winner = solveContinueFrom(new MatrixState(startMatrix, steps));
 		logResult(winner);
-		
-//		try {System.in.read();} catch (IOException e1) {}
-
-		while (steps < 1000000000) {
-			//try all maxscorers with 4 next steps
-			
-			Set<List<OperationInstance>> permutations = new HashSet<List<OperationInstance>>();
-			System.out.println("Generating permutations for " + winner.maxScorerStates.size() + " maxScorers.");
-			for(MatrixState winState: winner.maxScorerStates) {
-				List<OperationInstance> winStateOpsLog = winState.opsLog;
-
-				//ignore last two of opslog ???
-				if (winStateOpsLog.size() > 4) {
-//					winStateOpsLog.remove(winStateOpsLog.size() - 1);
-//					winStateOpsLog.remove(winStateOpsLog.size() - 1);
-				}
-				
-				if (steps <= 10) {
-					if (permutations.contains(winStateOpsLog)) {
-						System.out.println("Skipping permutations of " + winStateOpsLog);
-					}
-					
-					//try all permutations of winner to find best ones
-				
-					OperationInstance[] winnerOpsLogArray = winStateOpsLog.toArray(new OperationInstance[0]);
-					
-					//gather all permutations for all maxscorers (set, so unique)
-					HeapPermute.permute(winnerOpsLogArray, winnerOpsLogArray.length, permutations);
-										
-				} else {
-					//stick to winner
-					permutations.add(winStateOpsLog);
-				}
-			}
-
-			System.out.println("Calculating permutation winners " + permutations.size() + " permutations.");
-
-			setHeadStarts(permutations);
-			
-//			CryptoBoxResult permuWinners = solveContinueFrom(new MatrixState(startMatrix, ((List<OperationInstance>)permutations.toArray()[0]).size()));
-			CryptoBoxResult permuWinners = solveContinueFrom(new MatrixState(startMatrix, steps));			
-			logResult(permuWinners);
-
-			//convert permuwinner to new headstarts
-			Set<List<OperationInstance>> permuWinnersOpsLogs = new HashSet<List<OperationInstance>>();
-
-//			for (MatrixState permuWinner: permuWinners.maxScorerStates) {
-//				permuWinnersOpsLogs.add(permuWinner.opsLog);
-//			}
-
-			for (String result: permuWinners.maxScorersUniqueResults.keySet()) {
-				permuWinnersOpsLogs.add(permuWinners.maxScorersUniqueResults.get(result).opsLog);
-			}
-
-			
-			System.out.println("Calculating next steps for steps=" + (steps + 4));
-			setHeadStarts(permuWinnersOpsLogs);
-			winner = solveContinueFrom(new MatrixState(startMatrix, steps + 4));
-			logResult(winner);
-		}
-		
-		//try all maxscorers with 4 next steps
-		List<OperationInstance> winnerOpsLog = winner.maxScorerStates.toArray(new MatrixState[0])[0].opsLog;
-		OperationInstance[] winnerOpsLogArray = winnerOpsLog.toArray(new OperationInstance[0]);
-		
-		//try all permutations as headstart to see best one
-		Set<List<OperationInstance>> permutations = new HashSet<List<OperationInstance>>();
-		HeapPermute.permute(winnerOpsLogArray, winnerOpsLogArray.length, permutations);
-		
-		setHeadStarts(permutations);
-		
-		CryptoBoxResult winner2 = solveContinueFrom(new MatrixState(startMatrix, steps));
-		
-		logResult(winner);
-		logResult(winner2);
-		
-//		try {System.in.read();} catch (IOException e1) {}
-
-		//try all maxscorers with 4 next steps
-		for(MatrixState winState: winner.maxScorerStates) {
-			List<OperationInstance> winStateOpsLog = winState.opsLog;
-			
-			setHeadStarts(Collections.singleton(winStateOpsLog));
-			
-			CryptoBoxResult nextWinner2 = solveContinueFrom(new MatrixState(startMatrix, steps + 4));
-			
-			logResult(nextWinner2);
-		}
-		
 		return winner;
 	}
 
 
 	@Override
 	public CryptoBoxResult solveContinueFrom(MatrixState state2) {
-		System.out.println("Starting serially");
+//		System.out.println("Starting serially");
 		this.steps = state2.stepsLeft;
 
 		preStart();
@@ -185,25 +93,14 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 	private CryptoBoxResult solveSeriallyInternal(MatrixState state) {
 		Double bruteTries = Math.pow(oisCurrent.size(), steps);
 
-		// no headstart -> use empty headstart
-		if (headStarts == null || headStarts.isEmpty()) {
-			return solvedSeriallyInternalHeadStart(new CryptoBoxResult(state.matrix.size, bruteTries.longValue()),
-					state, EMPTY_HEAD_START);
-		}
-
-//		List<CryptoBoxResult> partialResults = new ArrayList<CryptoBoxResult>();
-//		for (List<OperationInstance> headStart : headStarts) {
-//			MatrixState state2 = new MatrixState(state);
-//			partialResults.add(solvedSeriallyInternalHeadStart(
-//					new CryptoBoxResult(state.matrix.size, bruteTries.longValue()), state2, headStart));
-//		}
-//
-//		return CryptoBoxResult.joinResults(partialResults);
+		//pre/postfixes will always have at least one item (empty opslog)
 		
 		CryptoBoxResult partialResult = new CryptoBoxResult(state.matrix.size, bruteTries.longValue());
-		for (List<OperationInstance> headStart : headStarts) {
-			MatrixState state2 = new MatrixState(state);
-			solvedSeriallyInternalHeadStart(partialResult, state2, headStart);
+		for (List<OperationInstance> prefix : prefixes) {
+			for (List<OperationInstance> postfix : postfixes) {
+				MatrixState state2 = new MatrixState(state);
+				solvedSeriallyInternalPrePostfix(partialResult, state2, prefix, postfix);
+			}
 		}
 
 		return partialResult;
@@ -211,31 +108,27 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 		
 	}
 
-	private CryptoBoxResult solvedSeriallyInternalHeadStart(
+	private CryptoBoxResult solvedSeriallyInternalPrePostfix(
 			CryptoBoxResult intermediateResult, MatrixState state,
-			List<OperationInstance> headStart) {
-		// apply headstart (can be empty)
-		state.apply(headStart);
+			List<OperationInstance> prefix, List<OperationInstance> postfix) {
+		if (prefix != null) state.apply(prefix);
+		
+		// perform next step
+		return doSolveSeriallyInternalNextStep(intermediateResult, state, postfix);
+	}
 
-		// if no steps left, do scoring
-		if (state.stepsLeft == 0) {
+	private CryptoBoxResult doSolveSeriallyInternalNextStep(
+			CryptoBoxResult intermediateResult, MatrixState state, List<OperationInstance> postfix) {
+
+		if (postfix != null && state.stepsLeft <= postfix.size()) 
+			state.apply(postfix);
+		
+		if (state.stepsLeft <= 0) {
 			doScoring(intermediateResult, state);
 
 			logProgress(intermediateResult, state, false);
 
 			return intermediateResult;
-		}
-
-		// else perform next step
-		return doSolveSeriallyInternalNextStep(intermediateResult, state);
-	}
-
-	private CryptoBoxResult doSolveSeriallyInternalNextStep(
-			CryptoBoxResult intermediateResult, MatrixState state) {
-
-		if (state.stepsLeft == 0) {
-			//headstart could have been full length, so in that case just calculate.
-			return solvedSeriallyInternalHeadStart(intermediateResult, state, EMPTY_HEAD_START);
 		}
 		
 		OperationInstance prevOIA = null;
@@ -298,8 +191,9 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 							|| !USE_FUZZY_RANDOM_SKIP
 							|| Math.random() * 100 > USE_FUZZY_RANDOM_SKIP_PERCENTAGE) {
 						state.apply(oi);
-						solvedSeriallyInternalHeadStart(intermediateResult,
-								state, EMPTY_HEAD_START);
+						doSolveSeriallyInternalNextStep(intermediateResult,	state, postfix);
+						if (state.stepsLeft == 0) //postfix has been applied in this case 
+							state.unapply(postfix);
 						state.unapply(oi);
 					}
 				}
@@ -313,7 +207,7 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 		// if already cache, ignore
 		int score = getScorer().score(state.matrix);
 
-		// System.out.println("scored: " + state);
+//		if (state.opsLog.size() > 4) System.out.println("scored: " + state);
 
 		processScore(partialResult, state, score);
 

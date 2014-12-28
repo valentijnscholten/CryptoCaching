@@ -20,11 +20,12 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 	private long paralellStepsLeft;
 	private MatrixState state;
 	private CryptoBoxScorer scorer;
-	private Set<List<OperationInstance>> headStarts;
+	private Set<List<OperationInstance>> prefixes;
+	private Set<List<OperationInstance>> postfixes;
 
 	public CryptoBoxFJSerialSolverTask(List<OperationInstance> ois,
 			long stepsLeft, long paralellSteps, CryptoBoxMatrix matrix,
-			CryptoBoxScorer scorer, Set<List<OperationInstance>> headStarts) {
+			CryptoBoxScorer scorer, Set<List<OperationInstance>> prefixes, Set<List<OperationInstance>> postfixes) {
 		super();
 		this.ois = ois;
 
@@ -32,11 +33,12 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 		this.paralellStepsLeft = paralellSteps;
 
 		this.scorer = scorer;
-		this.headStarts = headStarts;
+		this.prefixes = prefixes;
+		this.postfixes = postfixes;
 	}
 
 	public CryptoBoxFJSerialSolverTask(CryptoBoxFJSerialSolverTask task2) {
-		this.headStarts = new HashSet<List<OperationInstance>>();
+		this.prefixes = new HashSet<List<OperationInstance>>();
 		this.paralellStepsLeft = task2.paralellStepsLeft;
 		this.scorer = task2.scorer;
 		this.ois = task2.ois;
@@ -45,39 +47,40 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 
 	@Override
 	protected CryptoBoxResult compute() {
-		int l = ois.size();
-
 		List<RecursiveTask<CryptoBoxResult>> tasks = new ArrayList<RecursiveTask<CryptoBoxResult>>();
 
-		if (!headStarts.isEmpty()) {
-			// if we have headstarts, first fork by headstarts
-			for (List<OperationInstance> headStart : headStarts) {
-				CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
-						this);
-				task1.state.apply(headStart);
-				task1.state.opsLog = headStart;
-				tasks.add(task1);
-			}
-			// tasks setup
-
-		} else {
-			// no head starts, so fork by OI
-
-			if (paralellStepsLeft > 0) {
-				for (OperationInstance oi : this.ois) {
+		if (paralellStepsLeft > 0) {
+			for(List<OperationInstance> prefix: prefixes) {
+				//always at least one, the empty opslog
+				if (prefix.size() > 0) {
+					//fork by prefix, never by postfix. postfix will ripple through to serial
 					CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
 							this);
-					task1.state.apply(oi);
+					task1.state.apply(prefix);
+					//pre/post fixes are not copied, so set postfixes
+					task1.postfixes = this.postfixes;
+					task1.state.opsLog = prefix;
 					task1.paralellStepsLeft--;
 					tasks.add(task1);
+				} else {
+					int test = 0;
+					for (OperationInstance oi : this.ois) {
+						CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
+								this);
+						//pre/post fixes are not copied, so set postfixes
+						task1.postfixes = this.postfixes;
+						task1.state.apply(oi);
+						task1.paralellStepsLeft--;
+						tasks.add(task1);
+					}
 				}
-
-				// tasks setup
-			} else {
-				return new CryptoBoxSerialSolver().setScorer(scorer).setStartMatrix(state.matrix).solveContinueFrom(state);
 			}
-		}
 
+		} else {
+			//go serial
+			return new CryptoBoxSerialSolver().setScorer(scorer).setStartMatrix(state.matrix).setPostfixes(postfixes).solveContinueFrom(state);
+		} 
+		
 		// will return when tasks all are done.
 		List<RecursiveTask<CryptoBoxResult>> results = (List<RecursiveTask<CryptoBoxResult>>) invokeAll(tasks);
 		List<CryptoBoxResult> partialResults = new ArrayList<CryptoBoxResult>();

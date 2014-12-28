@@ -10,8 +10,8 @@ public class MatrixState {
 	public List<OperationInstance> opsLog;
 	public CryptoBoxMatrix matrix;
 
-	protected long steps;
 	public long stepsLeft;
+	protected long steps;
 	public int score;
 	
 	public MatrixState(CryptoBoxMatrix m, long stepsLeft) {
@@ -39,8 +39,8 @@ public class MatrixState {
 
 
 	
-	public void apply(List<OperationInstance> headStart) {
-		for (OperationInstance operationInstance: headStart) {
+	public void apply(List<OperationInstance> opsLog) {
+		for (OperationInstance operationInstance: opsLog) {
 			this.apply(operationInstance);
 		}
 	}
@@ -57,6 +57,12 @@ public class MatrixState {
 		
 	}
 
+	public void unapply(List<OperationInstance> opsLog) {
+		for (OperationInstance operationInstance: opsLog) {
+			this.unapply(operationInstance);
+		}
+	}
+	
 	public void unapply(OperationInstance operationInstance) {
 //		System.out.println("applying " + operationInstance + " opsLog is now: " + opsLog);
 		
@@ -77,5 +83,6 @@ public class MatrixState {
 			return false;
 		return true;
 	}
+
 	
 }

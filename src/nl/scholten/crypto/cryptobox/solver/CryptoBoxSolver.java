@@ -3,10 +3,12 @@ package nl.scholten.crypto.cryptobox.solver;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import nl.scholten.crypto.cryptobox.data.CounterSingletons;
 import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
 import nl.scholten.crypto.cryptobox.data.MatrixState;
@@ -23,8 +25,8 @@ public abstract class CryptoBoxSolver {
 
 //	protected final static boolean USE_FUZZY = false;
 	protected final static boolean USE_FUZZY = true;
-//	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
-	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
+	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
+//	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
 	protected final static boolean USE_FUZZY_RANDOM_SKIP = false;
 //	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
 	protected final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 90; //at 70% I was still able to get a good enough solution for 1 & 2 
@@ -52,8 +54,16 @@ public abstract class CryptoBoxSolver {
 	protected final static int MAX_MAX_SCORERS = 10;
 	
 	public static final List<OperationInstance> oisAll = new ArrayList<OperationInstance>();
+	public static final Set<List<OperationInstance>> DEFAULT_PREFIXES;
+	static {
+		Set<List<OperationInstance>> temp = new HashSet<List<OperationInstance>>();
+		temp.add(new LinkedList<OperationInstance>());
+		DEFAULT_PREFIXES = Collections.unmodifiableSet(temp);
+	}
+	public static final Set<List<OperationInstance>> DEFAULT_POSTFIXES = DEFAULT_PREFIXES;
 	
-	protected Set<List<OperationInstance>> headStarts;
+	protected Set<List<OperationInstance>> prefixes;
+	protected Set<List<OperationInstance>> postfixes;
 	
 	protected CryptoBoxScorer scorer;
 	protected CryptoBoxMatrix startMatrix;
@@ -61,15 +71,30 @@ public abstract class CryptoBoxSolver {
 	protected List<OperationInstance> oisCurrent = new ArrayList<OperationInstance>();
 
 	public CryptoBoxSolver() {
-		this.headStarts = new HashSet<List<OperationInstance>>();
+		this.prefixes = DEFAULT_PREFIXES;
+		this.postfixes = DEFAULT_POSTFIXES;
 	}
 	
-	public CryptoBoxSolver setHeadStarts(Set<List<OperationInstance>> headStarts) {
-		this.headStarts = headStarts;
+	public CryptoBoxSolver(CryptoBoxSolver solver2) {
+		this.setStartMatrix(solver2.startMatrix);
+		this.setScorer(solver2.scorer);
+		this.setSteps(solver2.steps);
+		this.setPrefixes(solver2.prefixes);
+		this.setPostfixes(solver2.postfixes);
+	}
+
+	public CryptoBoxSolver setPrefixes(Set<List<OperationInstance>> prefixes) {
+		if (prefixes != null && !prefixes.isEmpty()) this.prefixes = prefixes;
 		return this;
 	}
+
+	public CryptoBoxSolver setPostfixes(Set<List<OperationInstance>> postfixes) {
+		if (postfixes != null && !postfixes.isEmpty()) this.postfixes = postfixes;
+		return this;
+	}
+
 	
-	public CryptoBoxSolver setSteps(int steps) {
+	public CryptoBoxSolver setSteps(long steps) {
 		this.steps = steps;
 		return this;
 	}
@@ -145,7 +170,7 @@ public abstract class CryptoBoxSolver {
 		System.out.println("maxScorers: " + result.maxScorerStates.size());
 		System.out.println("maxScorersUniqueResults: " + result.maxScorersUniqueResults.size());
 		
-		System.out.println(result.triesGlobal.get() + " / " + result.bruteTries + " = " + (result.triesGlobal.get() * 100 / result.bruteTries.longValue()) + "%");
+		System.out.println(CounterSingletons.TRIES.counter.get() + " / " + result.bruteTries + " = " + (CounterSingletons.TRIES.counter.get() * 100 / result.bruteTries.longValue()) + "%");
 	}
 
 	protected void logProgress(CryptoBoxResult intermediateResult, MatrixState state, boolean force) {
@@ -153,13 +178,13 @@ public abstract class CryptoBoxSolver {
 		long effectiveTries = intermediateResult.tries;
 		if (!force) {
 			if (COUNT_ATOMIC) {
-				effectiveTries = intermediateResult.triesGlobal.get();
+				effectiveTries = CounterSingletons.TRIES.counter.get();
 			}
 		}
 		if (force || effectiveTries % 10000000l == 0) {
 			
 //			System.out.println(state +""+  intermediateResult);
-			System.out.println(StringUtils.leftPad(String.valueOf(intermediateResult.triesGlobal.get()), 10)  + " "  + intermediateResult);
+			System.out.println(StringUtils.leftPad(String.valueOf(CounterSingletons.TRIES.counter.get()), 10)  + " "  + intermediateResult);
 		}
 	}
 

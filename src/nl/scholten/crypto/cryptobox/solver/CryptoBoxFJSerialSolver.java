@@ -40,15 +40,10 @@ package nl.scholten.crypto.cryptobox.solver;
  * shiftormismatch even slower and bad results.
  * plain java regex is 10 times slower!
  * 
- */import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
+ */import java.util.concurrent.ForkJoinPool;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
 import nl.scholten.crypto.cryptobox.data.MatrixState;
-import nl.scholten.crypto.cryptobox.data.OperationInstance;
-import nl.scholten.crypto.cryptobox.util.HeapPermute;
 
 import org.apache.commons.lang3.Validate;
 
@@ -66,38 +61,31 @@ public class CryptoBoxFJSerialSolver extends CryptoBoxSolver {
 		super();
 	}
 	
+	public CryptoBoxFJSerialSolver(
+			CryptoBoxSolver solver2) {
+		super(solver2);
+	}
+
 	public void preStart() {
 		Validate.notNull(getScorer(), "scorer cannot be null");
 		Validate.notNull(getStartMatrix(), "startMatrix cannot be null");
 		Validate.isTrue(getStartMatrix().size > 0, "size must be above 0");
 		Validate.isTrue(steps > 0, "steps must be above 0");
-		
 	}
 	
 	public CryptoBoxResult solve() {
-		System.out.println("Starting with fork join");
+//		System.out.println("Starting with fork join");
 
 		preStart();
 
 		ForkJoinPool mainPool = new ForkJoinPool(FJ_POOL_SIZE);
 		
-		CryptoBoxFJSerialSolverTask mainTask = new CryptoBoxFJSerialSolverTask(oisCurrent, steps, PARALLEL_STEPS, startMatrix, scorer, headStarts);
+		CryptoBoxFJSerialSolverTask mainTask = new CryptoBoxFJSerialSolverTask(oisCurrent, steps, PARALLEL_STEPS, startMatrix, scorer, prefixes, postfixes);
 		CryptoBoxResult winner = mainPool.invoke(mainTask);
-
+		
+		mainPool.shutdown();
+		
 		logResult(winner);
-
-		//expirement with permutations
-		List<OperationInstance> winnerOpsLog = winner.maxScorerStates.toArray(new MatrixState[0])[0].opsLog;
-		OperationInstance[] winnerOpsLogArray = winnerOpsLog.toArray(new OperationInstance[0]);
-		
-		//try all permutations as headstart to see best one
-		Set<List<OperationInstance>> permutations = new HashSet<List<OperationInstance>>();
-		HeapPermute.permute(winnerOpsLogArray, winnerOpsLogArray.length, permutations);
-		
-		CryptoBoxFJSerialSolverTask mainTask2 = new CryptoBoxFJSerialSolverTask(oisCurrent, steps, PARALLEL_STEPS, startMatrix, scorer, permutations);
-		CryptoBoxResult winner2 = mainPool.invoke(mainTask);
-		
-		logResult(winner2);
 		
 		return winner;
 	}

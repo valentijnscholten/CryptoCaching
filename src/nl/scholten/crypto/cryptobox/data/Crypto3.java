@@ -9,10 +9,10 @@ import java.util.Set;
 
 import nl.scholten.crypto.cryptobox.scorer.BeginningLengthScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
+import nl.scholten.crypto.cryptobox.scorer.CountMatchesSquareScorer;
 import nl.scholten.crypto.cryptobox.scorer.EndingLengthScorer;
-import nl.scholten.crypto.cryptobox.scorer.IndexOfLengthSquareScorer;
-import nl.scholten.crypto.cryptobox.solver.CryptoBoxSerialSolver;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
+import nl.scholten.crypto.cryptobox.solver.CryptoBoxStrategicSolver;
 
 @SuppressWarnings("serial")
 public class Crypto3 extends CryptoBoxMatrix {
@@ -43,7 +43,7 @@ public class Crypto3 extends CryptoBoxMatrix {
 		super(input, SIZE);
 	}
 	
-	public static final Set<List<OperationInstance>> HEAD_STARTS = new HashSet<List<OperationInstance>>();
+	public static final Set<List<OperationInstance>> PREFIXES = new HashSet<List<OperationInstance>>();
 	static {
 		
 		///after 1 night running, two keus with score == 100: [CU_9, RL_6, CU_7, RR_2, CU_4, RL_6, CD_2, RR_5, CU_5, RR_0, RR_3, RR_7][CU_9, RL_0, CD_8, RR_9, CU_1, CU_2, RL_1, RL_7, CD_5, CD_6, RR_1, RL_3]
@@ -138,15 +138,16 @@ public class Crypto3 extends CryptoBoxMatrix {
 		CombinedScorer scorer = new CombinedScorer();
 //		scorer.addScorer(new IndexOfScorer(Arrays.asList(HITS)));
 //		scorer.addScorer(new IndexOfLengthScorer(Arrays.asList(HITS)));
-		scorer.addScorer(new IndexOfLengthSquareScorer(Arrays.asList(HITS)));
+//		scorer.addScorer(new IndexOfLengthSquareScorer(Arrays.asList(HITS)));
+		scorer.addScorer(new CountMatchesSquareScorer(Arrays.asList(HITS)));
 //		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
 		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(BEGINNINGS)));
 //		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
 		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));
 
-		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
+		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
 //		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();
-		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setHeadStarts(HEAD_STARTS).setOisCurrent(oisCurrent).solve();
+		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setPrefixes(PREFIXES).setOisCurrent(oisCurrent).solve();
 		
 	}
 

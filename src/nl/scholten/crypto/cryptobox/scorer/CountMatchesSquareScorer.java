@@ -6,10 +6,13 @@ import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class CountMatchesScorer implements CryptoBoxScorer {
+public class CountMatchesSquareScorer implements CryptoBoxScorer {
 
 	private List<String> hits;
-	private boolean rewardFirstOccurence;
+
+	public CountMatchesSquareScorer(List<String> hits) {
+		this.hits = hits;
+	}
 
 	@Override
 	public int score(CryptoBoxMatrix matrix) {
@@ -17,12 +20,7 @@ public class CountMatchesScorer implements CryptoBoxScorer {
 		for (String hit : hits) {
 			int count = StringUtils.countMatches(matrix.data, hit);
 
-			// extra score for first occurrence to stimulate more different
-			// words
-			if (rewardFirstOccurence && count > 0)
-				result += 10;
-
-			result += (count * hit.length()); // 10 pts per word
+			result += (count * hit.length() * hit.length()); 
 		}
 		return result;
 	}

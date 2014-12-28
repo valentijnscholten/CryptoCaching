@@ -34,7 +34,7 @@ public class Crypto3UK extends CryptoBoxMatrix {
 	private static int SIZE = 10;
 	private static int STEPS = 4;
 	
-	public static final Set<List<OperationInstance>> HEAD_STARTS = new HashSet<List<OperationInstance>>();
+	public static final Set<List<OperationInstance>> PREFIXES = new HashSet<List<OperationInstance>>();
 	static {
 		
 		///after 1 night running, two keus with score == 100: [CU_9, RL_6, CU_7, RR_2, CU_4, RL_6, CD_2, RR_5, CU_5, RR_0, RR_3, RR_7][CU_9, RL_0, CD_8, RR_9, CU_1, CU_2, RL_1, RL_7, CD_5, CD_6, RR_1, RL_3]
@@ -140,7 +140,7 @@ public class Crypto3UK extends CryptoBoxMatrix {
 
 		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
 //		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();
-		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setHeadStarts(HEAD_STARTS).setOisCurrent(oisCurrent).solve();
+		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setPrefixes(PREFIXES).setOisCurrent(oisCurrent).solve();
 		
 	}
 
