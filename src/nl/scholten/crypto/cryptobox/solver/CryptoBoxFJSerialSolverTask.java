@@ -16,6 +16,8 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 
 	private static final long serialVersionUID = 1L;
 
+	private static final int MAX_FORKS = 16;
+
 	private List<OperationInstance> ois;
 	private long paralellStepsLeft;
 	private MatrixState state;
@@ -50,35 +52,69 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 		List<RecursiveTask<CryptoBoxResult>> tasks = new ArrayList<RecursiveTask<CryptoBoxResult>>();
 
 		if (paralellStepsLeft > 0) {
-			for(List<OperationInstance> prefix: prefixes) {
-				//always at least one, the empty opslog
-				if (prefix.size() > 0) {
-					//fork by prefix, never by postfix. postfix will ripple through to serial
-					CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
-							this);
-					task1.state.apply(prefix);
-					//pre/post fixes are not copied, so set postfixes
-					task1.postfixes = this.postfixes;
-					task1.state.opsLog = prefix;
-					task1.paralellStepsLeft--;
-					tasks.add(task1);
-				} else {
-					int test = 0;
-					for (OperationInstance oi : this.ois) {
+			//fork by prefix, but obey MAX_FORKS
+			if (prefixes.size() < MAX_FORKS) {
+				//fork by prefixes as usual
+				for(List<OperationInstance> prefix: prefixes) {
+					//always at least one, the empty opslog
+					if (prefix.size() > 0) {
+						//fork by prefix, never by postfix. postfix will ripple through to serial
 						CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
 								this);
+						task1.state.apply(prefix);
 						//pre/post fixes are not copied, so set postfixes
 						task1.postfixes = this.postfixes;
-						task1.state.apply(oi);
+						task1.state.opsLog = prefix;
 						task1.paralellStepsLeft--;
 						tasks.add(task1);
+					} else {
+						int test = 0;
+						for (OperationInstance oi : this.ois) {
+							CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
+									this);
+							//pre/post fixes are not copied, so set postfixes
+							task1.postfixes = this.postfixes;
+							task1.state.apply(oi);
+							task1.paralellStepsLeft--;
+							tasks.add(task1);
+						}
 					}
 				}
-			}
+			} else {
+				int segmentSize = prefixes.size() / MAX_FORKS;
+				int leftOver = prefixes.size() - MAX_FORKS * segmentSize;
+				int currentSegmentLimit = segmentSize;
+				if (leftOver > 0) {
+					currentSegmentLimit++;
+					leftOver--;
+				}
+				Set<List<OperationInstance>> subset = new HashSet<List<OperationInstance>>(); 
+				for(List<OperationInstance> prefix: prefixes) {
+					subset.add(prefix);
+					if (subset.size() == currentSegmentLimit) {
 
+						CryptoBoxFJSerialSolverTask task1 = new CryptoBoxFJSerialSolverTask(
+								this);
+						//pre/post fixes are not copied, so set them
+						task1.prefixes = subset;
+						task1.postfixes = this.postfixes;
+						task1.paralellStepsLeft--;
+						tasks.add(task1);
+						
+						subset = new HashSet<List<OperationInstance>>();
+						currentSegmentLimit = segmentSize;
+						if (leftOver > 0) {
+							currentSegmentLimit++;
+							leftOver--;
+						}
+					}
+				}
+//				System.out.println("TEST");
+			}
+			
 		} else {
 			//go serial
-			return new CryptoBoxSerialSolver().setScorer(scorer).setStartMatrix(state.matrix).setPostfixes(postfixes).solveContinueFrom(state);
+			return new CryptoBoxSerialSolver().setScorer(scorer).setStartMatrix(state.matrix).setPrefixes(prefixes).setPostfixes(postfixes).solveContinueFrom(state);
 		} 
 		
 		// will return when tasks all are done.
@@ -91,5 +127,6 @@ public class CryptoBoxFJSerialSolverTask extends RecursiveTask<CryptoBoxResult> 
 		
 		return CryptoBoxResult.joinResults(partialResults);
 	}
+
 
 }

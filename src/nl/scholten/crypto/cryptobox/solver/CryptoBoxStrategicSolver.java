@@ -81,10 +81,17 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 
 		CounterSingletons.reset();
 		CryptoBoxSolver solverFirst = new CryptoBoxFJSerialSolver(this);
+//		CryptoBoxSolver solverFirst = new CryptoBoxSerialSolver(this);
 		CryptoBoxResult winnerFirst = solverFirst.setSteps(stratSteps).solve();
 		
 		Set<List<OperationInstance>> permuWinnersOpsLogs = winnerFirst.getMaxScorerOpsLogs();
 
+		permuWinnersOpsLogs.clear();
+		Set<MatrixState> topScorers = winnerFirst.getTopScorers();
+		for(MatrixState winState: topScorers) {
+			permuWinnersOpsLogs.add(winState.opsLog);
+		}
+		
 		stratSteps += deltaSteps;
 		
 		while (stratSteps <= steps + (extraIterations * deltaSteps)) { 
@@ -109,18 +116,30 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 			solverPostfix.setPostfixes(permuWinnersOpsLogs);
 			CryptoBoxResult winnerPostfix = solverPostfix.setSteps(stratSteps).solve();
 
-			if (winnerPrefix.maxScore > winnerPostfix.maxScore) System.out.println("fix winner: prefix"); else
-			if (winnerPrefix.maxScore == winnerPostfix.maxScore) System.out.println("fix winner: prefix-postfix"); else
-			System.out.println("fix winner: postfix");
+//			for(List<OperationInstance> middleFix: permuWinnersOpsLogs) {
+//				
+//			}
+//			System.out.println("middlefixes:");
+//			CounterSingletons.reset();
+//			CryptoBoxSolver solverMiddlefix = new CryptoBoxFJSerialSolver(this);
+////			CryptoBoxSolver solverPostfix = new CryptoBoxSerialSolver(this);
+//			solverPostfix.setPostfixes(permuWinnersOpsLogs);
+//			CryptoBoxResult winnerMiddlefix = solverPostfix.setSteps(stratSteps).solve();
+//
+			if (winnerPrefix.maxScore > winnerPostfix.maxScore) System.out.println("fix winner: prefix \n" + winnerPrefix.toString()); else
+			if (winnerPrefix.maxScore == winnerPostfix.maxScore) System.out.println("fix winner: prefix-postfix \n" + winnerPrefix.toString()); else
+			System.out.println("fix winner: postfix\n" + winnerPostfix.toString());
 
 			//should we keep both winners?
 			CryptoBoxResult winner = CryptoBoxResult.joinResults(new CryptoBoxResult[]{winnerPrefix, winnerPostfix});
-
 			
 			//for all maxscorers, get their permutations and find the best one(s)
 			Set<List<OperationInstance>> permutations = new HashSet<List<OperationInstance>>();
-			System.out.println("Generating permutations for " + winner.maxScorerStates.size() + " maxScorers.");
-			for(MatrixState winState: winner.maxScorerStates) {
+//			System.out.println("Generating permutations for " + winner.maxScorerStates.size() + " maxScorers.");
+//			for(MatrixState winState: winner.maxScorerStates) {
+			topScorers = winner.getTopScorers();
+			System.out.println("Generating permutations for " + topScorers.size() + " topScorers.");
+			for(MatrixState winState: topScorers) {
 				List<OperationInstance> winStateOpsLog = winState.opsLog;
 
 				if (stratSteps <= 10) {
@@ -154,7 +173,8 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 //			for (MatrixState permuWinner: permuWinners.maxScorerStates) {
 //				permuWinnersOpsLogs.add(permuWinner.opsLog);
 //			}
-			permuWinnersOpsLogs = permuWinners.getMaxScorerUniqueResultOpsLogs();
+//			permuWinnersOpsLogs = permuWinners.getMaxScorerUniqueResultOpsLogs();
+			permuWinnersOpsLogs = permuWinners.getTopScorersOpsLogs();
 			
 			stratSteps += deltaSteps;
 //			if (stratSteps > steps) stratSteps = steps;

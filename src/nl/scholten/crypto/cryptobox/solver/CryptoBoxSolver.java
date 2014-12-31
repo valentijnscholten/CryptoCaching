@@ -156,7 +156,8 @@ public abstract class CryptoBoxSolver {
 				+ " tries per second. solution found after: " + (((result.foundTime-result.startTime)<60000)?(result.foundTime-result.startTime) + "ms.":((result.foundTime - result.startTime) / 1000) + "s."));
 	
 		System.out.println(message);
-		
+		System.out.println("scoreMap size: " + result.topScorersMap.size() + " " + (result.topScorersMap.size() < 100?result.topScorersMap.keySet():""));
+		System.out.println(result.topScorersMap.get(result.topScorersMap.lastKey()));
 		
 		int i = 0;
 		for (MatrixState maxScorer: result.maxScorerStates){

@@ -3,9 +3,12 @@ package nl.scholten.crypto.cryptobox.data;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -17,6 +20,8 @@ public class CryptoBoxResult {
 	public int maxScore;
 	public Set<MatrixState> maxScorerStates;
 	public Map<String, MatrixState> maxScorersUniqueResults;
+	public SortedMap<Integer, List<MatrixState>> topScorersMap;
+	
 	
 	public static Long bruteTries;
 	
@@ -29,33 +34,18 @@ public class CryptoBoxResult {
 		maxScorersUniqueResults = new HashMap<String, MatrixState>();
 		this.bruteTries = bruteTries;
 
+//		this.topScorersMap = new LinkedHashMap<Integer, List<MatrixState>>() {
+//            @Override
+//            protected boolean removeEldestEntry(Map.Entry<Integer, List<MatrixState>> eldest) {
+//                //max last 10 highest scores
+//            	return size() > 10;
+//            }
+//		};
+
+		this.topScorersMap = new TreeMap<Integer, List<MatrixState>>();	
+		
 	}
-	
-	public CryptoBoxResult merge(CryptoBoxResult result2) {
-		if (result2.maxScore > 0 && result2.maxScore >= this.maxScore) {
 
-			if (result2.maxScore > this.maxScore) {
-				this.maxScorerStates.clear();
-				this.maxScorersUniqueResults.clear();
-				this.foundTime = result2.foundTime;
-			} else {
-//				this.foundTime = Math.min(a, b)
-			}
-
-			this.maxScore = result2.maxScore;
-			this.maxScorerStates.addAll(result2.maxScorerStates);
-			//possibly overwrites existing results, but we don't care we need only one oplog per unique result
-			this.maxScorersUniqueResults.putAll(result2.maxScorersUniqueResults);
-
-			System.out.println("join: new max score " + StringUtils.leftPad(String.valueOf(result2.maxScore), 3)
-					+ " for: " + result2.maxScorerStates);
-		}
-		this.tries += result2.tries;
-		this.startTime = Math.min(this.startTime, result2.startTime);
-
-		return this;
-	}
-	
 	public CryptoBoxResult merge(MatrixState state) {
 		if (state.score > 0 && state.score >= this.maxScore) {
 
@@ -87,11 +77,70 @@ public class CryptoBoxResult {
 			
 		}
 		this.tries += 1;
+		this.mergeScoreMap(new MatrixState(state));
 		CounterSingletons.TRIES.counter.getAndIncrement();
 
 		return this;
 	}
 	
+	
+	public CryptoBoxResult merge(CryptoBoxResult result2) {
+		if (result2.maxScore > 0 && result2.maxScore >= this.maxScore) {
+
+			if (result2.maxScore > this.maxScore) {
+				this.maxScorerStates.clear();
+				this.maxScorersUniqueResults.clear();
+				this.foundTime = result2.foundTime;
+			} else {
+//				this.foundTime = Math.min(a, b)
+			}
+
+			this.maxScore = result2.maxScore;
+			this.maxScorerStates.addAll(result2.maxScorerStates);
+			//possibly overwrites existing results, but we don't care we need only one oplog per unique result
+			this.maxScorersUniqueResults.putAll(result2.maxScorersUniqueResults);
+			
+			System.out.println("join: new max score " + StringUtils.leftPad(String.valueOf(result2.maxScore), 3)
+					+ " for: " + result2.maxScorerStates);
+		}
+		this.mergeScoreMap(result2.topScorersMap);
+		this.tries += result2.tries;
+		this.startTime = Math.min(this.startTime, result2.startTime);
+	
+		return this;
+	}
+	
+	private void mergeScoreMap(MatrixState state) {
+		List<MatrixState> states = this.topScorersMap.get(state.score);
+		if (states == null) {
+			states = new LinkedList<MatrixState>();
+			this.topScorersMap.put(state.score, states);
+		}
+		//TODO only add if not yet exists?
+		states.add(state);
+		cropMap(topScorersMap);
+	}
+
+	
+	private void mergeScoreMap(Map<Integer, List<MatrixState>> scoreMap2) {
+		for (Map.Entry<Integer, List<MatrixState>> entry2: scoreMap2.entrySet()) {
+			if (!this.topScorersMap.containsKey(entry2.getKey())) {
+				this.topScorersMap.put(entry2.getKey(), entry2.getValue());
+			} else {
+				this.topScorersMap.get(entry2.getKey()).addAll(entry2.getValue());
+			}
+			cropMap(topScorersMap);
+		}
+	}
+	
+	
+	private void cropMap(SortedMap<Integer, List<MatrixState>> map) {
+		//first attempt, just keep 10 top scores with all states for those.
+		if (map.size() > 5) {
+			map.remove(map.firstKey());
+		}
+	}
+
 	public static CryptoBoxResult joinResults(List<CryptoBoxResult> partialResults) {
 		CryptoBoxResult winner = null;
 		for(CryptoBoxResult partialResult: partialResults){
@@ -125,6 +174,7 @@ public class CryptoBoxResult {
 		result.append(" total time " + ((delta < 60000)?delta + "ms.":((delta / 1000) + "s.")));
 		result.append(" i.e. " + triesPerSecond + " tries per second");
 		result.append(" solution found after: " + ((foundDelta < 60000)?foundDelta + "ms.":(foundDelta / 1000) + "s."));
+		result.append(" scoreMap size " + this.topScorersMap.size());
 		result.append(" maxScorers: " + this.maxScorerStates.size() + "(" + this.maxScorersUniqueResults.size() + " unique) ");			
 		if (this.maxScorerStates.size() <= 100) {
 			result.append(" data: " + this.maxScorerStates);
@@ -155,7 +205,29 @@ public class CryptoBoxResult {
 		
 		return result;
 	}
+	
+	public Set<MatrixState> getTopScorers() {
+//		if (true) return maxScorerStates;
+		Set<MatrixState> result = new HashSet<MatrixState>();
+		for (Map.Entry<Integer, List<MatrixState>> entry: this.topScorersMap.entrySet()) {
+			for(MatrixState state: entry.getValue()) {
+				result.add(state);
+			}
+		}
+		return result;
+	}
 
+	public Set<List<OperationInstance>> getTopScorersOpsLogs() {
+//		if (true) return getMaxScorerUniqueResultOpsLogs();
+		Set<List<OperationInstance>> result = new HashSet<List<OperationInstance>>();
+		for (MatrixState state: getTopScorers()) {
+			result.add(state.opsLog);
+		}
+		
+		return result;
+	}
+
+	
 	
 }
 

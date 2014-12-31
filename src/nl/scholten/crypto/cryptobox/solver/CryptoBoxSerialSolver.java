@@ -103,6 +103,7 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 			}
 		}
 
+//		System.out.println(partialResult.topScorersMap.keySet());
 		return partialResult;
 		
 		
