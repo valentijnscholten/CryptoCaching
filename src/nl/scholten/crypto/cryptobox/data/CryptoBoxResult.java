@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import nl.scholten.crypto.cryptobox.util.Util;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class CryptoBoxResult {
@@ -207,7 +209,6 @@ public class CryptoBoxResult {
 	}
 	
 	public Set<MatrixState> getTopScorers() {
-//		if (true) return maxScorerStates;
 		Set<MatrixState> result = new HashSet<MatrixState>();
 		for (Map.Entry<Integer, List<MatrixState>> entry: this.topScorersMap.entrySet()) {
 			for(MatrixState state: entry.getValue()) {
@@ -218,7 +219,6 @@ public class CryptoBoxResult {
 	}
 
 	public Set<List<OperationInstance>> getTopScorersOpsLogs() {
-//		if (true) return getMaxScorerUniqueResultOpsLogs();
 		Set<List<OperationInstance>> result = new HashSet<List<OperationInstance>>();
 		for (MatrixState state: getTopScorers()) {
 			result.add(state.opsLog);
@@ -227,6 +227,42 @@ public class CryptoBoxResult {
 		return result;
 	}
 
+	
+
+	public Set<List<OperationInstance>> getTopScorersOpsLogsNoPermutations() {
+		Set<List<OperationInstance>> result = new HashSet<List<OperationInstance>>();
+		for (MatrixState state: getTopScorers()) {
+			if (!Util.containsPermutationOf(state.opsLog, result)) {
+				result.add(state.opsLog);
+			}
+		}
+		
+		return result;
+	}
+
+	public Set<OperationInstance> getTopScorerOIs() {
+		Set<OperationInstance> result = new HashSet<OperationInstance>();
+		for(MatrixState topScorer: getTopScorers()) {
+			result.addAll(new HashSet<>(topScorer.opsLog));
+		}
+		return result;
+	}
+	
+	public Map<OperationInstance, Integer> getTopScorerOICounts() {
+		Map<OperationInstance, Integer> result = new HashMap<OperationInstance, Integer>();
+		for(MatrixState topScorer: getTopScorers()) {
+			for(OperationInstance oi: topScorer.opsLog) {
+				Integer count = result.get(oi);
+				if (count == null) {
+					result.put(oi, new Integer(1));
+				} else {
+					result.put(oi, count + 1);
+				}
+			}
+		}
+		return Util.sortByDescendingValue(result);	
+	}
+	
 	
 	
 }

@@ -50,7 +50,6 @@ import nl.scholten.crypto.cryptobox.data.CounterSingletons;
 import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
 import nl.scholten.crypto.cryptobox.data.MatrixState;
 import nl.scholten.crypto.cryptobox.data.OperationInstance;
-import nl.scholten.crypto.cryptobox.util.HeapPermute;
 
 import org.apache.commons.lang3.Validate;
 
@@ -73,7 +72,7 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 		preStart();
 
 		CounterSingletons.reset();
-		long stratSteps = Math.min(steps, 4);
+		long stratSteps = Math.min(steps, 6);
 		long deltaSteps = 4;
 //		long extraIterations = 2 * (steps / deltaSteps);
 		long extraIterations = Math.max(0, 2 * ((steps / deltaSteps) - 1));
@@ -139,35 +138,41 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 //			for(MatrixState winState: winner.maxScorerStates) {
 			topScorers = winner.getTopScorers();
 			System.out.println("Generating permutations for " + topScorers.size() + " topScorers.");
-			for(MatrixState winState: topScorers) {
-				List<OperationInstance> winStateOpsLog = winState.opsLog;
-
-				if (stratSteps <= 10) {
-					if (permutations.contains(winStateOpsLog)) {
-						System.out.println("Skipping permutations of " + winStateOpsLog);
-					}
-					
-					//try all permutations of winner to find best ones
-				
-					OperationInstance[] winnerOpsLogArray = winStateOpsLog.toArray(new OperationInstance[0]);
-					
-					//gather all permutations for all maxscorers (set, so unique)
-					HeapPermute.permute(winnerOpsLogArray, winnerOpsLogArray.length, permutations);
+			System.out.println("TopScorers no permutations: " + winner.getTopScorersOpsLogsNoPermutations().size());
+//			for(List<OperationInstance> winOpsLog: winner.getTopScorersOpsLogsNoPermutations()) {
+//				
+//				if (stratSteps <= 12) {
+//					//try all permutations of winner to find best ones
+//				
+//					OperationInstance[] winnerOpsLogArray = winOpsLog.toArray(new OperationInstance[0]);
+//					
+//					//gather all permutations for all maxscorers (set, so unique)
+//					HeapPermute.permute(winnerOpsLogArray, winnerOpsLogArray.length, permutations);
 										
-				} else {
-					//stick to winner
-					permutations.add(winStateOpsLog);
-				}
-			}
+//				} else {
+//					//stick to winner
+//					permutations.add(winOpsLog);
+//				}
+//			}
 
+			permutations = winner.getTopScorersOpsLogsNoPermutations();
+			
+			System.out.println("TopOIs: " + winner.getTopScorerOIs().size() + " " + winner.getTopScorerOIs());
+			System.out.println("TopOICounts: " + winner.getTopScorerOICounts());
 			System.out.println("Calculating permutation winners for " + permutations.size() + " permutations.");
-
+			
+			
 			CounterSingletons.reset();
-			CryptoBoxSolver permuSolver = new CryptoBoxFJSerialSolver(this);
+//			CryptoBoxSolver permuSolver = new CryptoBoxFJSerialSolver(this);
+//			permuSolver.setSteps(stratSteps);
+//			permuSolver.setPrefixes(permutations);
+
+			CryptoBoxFJSerialSolver permuSolver = new CryptoBoxFJSerialSolver(this);
 			permuSolver.setSteps(stratSteps);
-			permuSolver.setPrefixes(permutations);
+			permuSolver.setPermuSources(permutations);
 			
 			CryptoBoxResult permuWinners = permuSolver.solve();			
+//			if (true) System.exit(0);
 
 			//convert permuwinner to new headstarts
 //			for (MatrixState permuWinner: permuWinners.maxScorerStates) {

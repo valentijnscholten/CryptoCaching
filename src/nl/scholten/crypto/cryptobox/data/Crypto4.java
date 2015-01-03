@@ -17,13 +17,13 @@ import nl.scholten.crypto.cryptobox.solver.CryptoBoxStrategicSolver;
 public class Crypto4 extends CryptoBoxMatrix {
 
 	private static String INPUT = "UAEIOMETEREIRRHOHNTGTHEVPROJSLEETIVPNAECHIERDCAOOFNTPTDRIERENARONTZEDEENUADENEVENGCJFZENENBVAATMETVE";
-	public static String[] HITS = new String[] { "PROJECTEER", "VANAF", "HIER", "RECHTDOOR", "METER", "HONDERD", "HOOG", "EN", "JACHT", "TROFEE", "ACHTER", "UIT", "NAAR",
-		"GRADEN", "MINUTEN", "NERGENS", "GETAL", "HET", "GAAT", "VIND", "DRIEEENPUNTZEVENGRADEN",  "NEGENVIJFZEVENACHTMETER", "VANUIT", "LAATSTE", "MET",
-		"LEER", "OM", "TE", "GAAN",
+	public static String[] HITS = new String[] { "PROJECTEER", "VANAF", "HIER", "METER", "EN", "NAAR",
+		"GRADEN", "MINUTEN", "NERGENS", "GETAL", "HET", "DRIEEENPUNTZEVENGRADEN",  "NEGENVIJFZEVENACHTMETER", 
+		"LEER", "OM", "TE", "GAAN", "COORDINAAT", "HET", //"BRAVO",  
 		"PUNT", "NUL", "EEN", "TWEE", "DRIE", "VIER", "VIJF",
 		"ZES", "ZEVEN", "ACHT", "NEGEN" };
 
-	public static String[] BEGINNINGS = new String[] { // "UIT", "BAROMETER" 
+	public static String[] BEGINNINGS = new String[] {  //"BRAVO" //, "BAROMETER" 
 		}; //?
 	public static String[] ENDINGS = new String[] { "EENVIJFZEVENACHTMETER", "METER"
 		}; //?
@@ -38,8 +38,8 @@ public class Crypto4 extends CryptoBoxMatrix {
 	}
 
 	private static int SIZE = 10;
-//	private static int STEPS = 14; // hint from Cache owner
-	private static int STEPS = 16;
+	private static int STEPS = 14; // hint from Cache owner
+//	private static int STEPS = 16;
 
 	public Crypto4() {
 		super(INPUT, SIZE);

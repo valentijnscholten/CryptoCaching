@@ -40,10 +40,14 @@ package nl.scholten.crypto.cryptobox.solver;
  * shiftormismatch even slower and bad results.
  * plain java regex is 10 times slower!
  * 
- */import java.util.concurrent.ForkJoinPool;
+ */import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxResult;
 import nl.scholten.crypto.cryptobox.data.MatrixState;
+import nl.scholten.crypto.cryptobox.data.OperationInstance;
 
 import org.apache.commons.lang3.Validate;
 
@@ -57,15 +61,27 @@ public class CryptoBoxFJSerialSolver extends CryptoBoxSolver {
 	 */
 	public static int PARALLEL_STEPS = 1;
 
+	
+	protected Set<List<OperationInstance>> permuSources;
+	
+
 	public CryptoBoxFJSerialSolver() {
 		super();
+		this.permuSources = new HashSet<List<OperationInstance>>();
+		
 	}
 	
 	public CryptoBoxFJSerialSolver(
 			CryptoBoxSolver solver2) {
 		super(solver2);
+		this.permuSources = new HashSet<List<OperationInstance>>();
 	}
 
+	public CryptoBoxSolver setPermuSources(Set<List<OperationInstance>> permuSources) {
+		if (permuSources != null && !permuSources.isEmpty()) this.permuSources = permuSources;
+		return this;
+	}
+	
 	public void preStart() {
 		Validate.notNull(getScorer(), "scorer cannot be null");
 		Validate.notNull(getStartMatrix(), "startMatrix cannot be null");
@@ -80,7 +96,7 @@ public class CryptoBoxFJSerialSolver extends CryptoBoxSolver {
 
 		ForkJoinPool mainPool = new ForkJoinPool(FJ_POOL_SIZE);
 		
-		CryptoBoxFJSerialSolverTask mainTask = new CryptoBoxFJSerialSolverTask(oisCurrent, steps, PARALLEL_STEPS, startMatrix, scorer, prefixes, postfixes);
+		CryptoBoxFJSerialSolverTask mainTask = new CryptoBoxFJSerialSolverTask(oisCurrent, steps, PARALLEL_STEPS, startMatrix, scorer, prefixes, postfixes, permuSources);
 		CryptoBoxResult winner = mainPool.invoke(mainTask);
 		
 		mainPool.shutdown();
@@ -95,5 +111,4 @@ public class CryptoBoxFJSerialSolver extends CryptoBoxSolver {
 		throw new UnsupportedOperationException("not implemented yet");
 	}
 
-	
 }

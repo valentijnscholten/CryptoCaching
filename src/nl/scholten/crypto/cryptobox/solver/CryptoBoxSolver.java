@@ -23,12 +23,12 @@ public abstract class CryptoBoxSolver {
 	//don't skip duplicates
 //	protected final static boolean DO_ALL_OPS_LOGS = true;
 
-//	protected final static boolean USE_FUZZY = false;
-	protected final static boolean USE_FUZZY = true;
-	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
-//	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
-	protected final static boolean USE_FUZZY_RANDOM_SKIP = false;
-//	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
+	protected final static boolean USE_FUZZY = false;
+//	protected final static boolean USE_FUZZY = true;
+//	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
+	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
+//	protected final static boolean USE_FUZZY_RANDOM_SKIP = false;
+	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
 	protected final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 90; //at 70% I was still able to get a good enough solution for 1 & 2 
 			
 	protected final static boolean COUNT_ATOMIC = true;
@@ -49,7 +49,6 @@ public abstract class CryptoBoxSolver {
 	protected final static boolean REWARD_FIRST_OCCURRENCE_OF_WORD = false; // slows down
 	protected final static boolean SCORE_JAVA_REGEX = false;
 //	protected final static boolean SCORE_JAVA_REGEX = true;
-
 	
 	protected final static int MAX_MAX_SCORERS = 10;
 	
@@ -61,6 +60,7 @@ public abstract class CryptoBoxSolver {
 		DEFAULT_PREFIXES = Collections.unmodifiableSet(temp);
 	}
 	public static final Set<List<OperationInstance>> DEFAULT_POSTFIXES = DEFAULT_PREFIXES;
+	public static final Set<List<OperationInstance>> DEFAULT_PERMUSOURCES = DEFAULT_PREFIXES;
 	
 	protected Set<List<OperationInstance>> prefixes;
 	protected Set<List<OperationInstance>> postfixes;
@@ -93,7 +93,6 @@ public abstract class CryptoBoxSolver {
 		return this;
 	}
 
-	
 	public CryptoBoxSolver setSteps(long steps) {
 		this.steps = steps;
 		return this;
@@ -204,5 +203,5 @@ public abstract class CryptoBoxSolver {
 	public abstract CryptoBoxResult solve();
 
 	public abstract CryptoBoxResult solveContinueFrom(MatrixState state);
-	
+
 }

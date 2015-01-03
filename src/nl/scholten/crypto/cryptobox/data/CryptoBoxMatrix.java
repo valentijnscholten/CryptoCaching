@@ -160,6 +160,8 @@ public class CryptoBoxMatrix {
 	}
 
 	public void apply(OperationInstance oi) {
+//		System.out.println("apply: " + oi);
+		
 		switch (oi.op) {
 
 		case CU:
@@ -181,7 +183,8 @@ public class CryptoBoxMatrix {
 	}
 
 	public void unapply(OperationInstance oi) {
-
+//		System.out.println("unapply: " + oi);
+		
 		switch (oi.op) {
 
 		case CU:

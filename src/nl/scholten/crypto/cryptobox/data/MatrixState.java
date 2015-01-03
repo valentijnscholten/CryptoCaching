@@ -1,6 +1,6 @@
 package nl.scholten.crypto.cryptobox.data;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -18,13 +18,13 @@ public class MatrixState {
 		this.matrix = new CryptoBoxMatrix(m);
 		this.steps = 0;
 		this.stepsLeft = stepsLeft;
-		this.opsLog = new LinkedList<OperationInstance>();
+		this.opsLog = new ArrayList<OperationInstance>();
 	}
 
 	public MatrixState(MatrixState state2) {
 		this.steps = state2.steps;
 		this.stepsLeft = state2.stepsLeft;
-		this.opsLog = new LinkedList<OperationInstance>(state2.opsLog);
+		this.opsLog = new ArrayList<OperationInstance>(state2.opsLog);
 		this.matrix = new CryptoBoxMatrix(state2.matrix);
 		this.score = state2.score;
 	}
@@ -37,9 +37,13 @@ public class MatrixState {
 		return StringUtils.leftPad(String.valueOf(score), 4) + "\n" + opsLog + "\n" + matrix.toStringPretty();
 	}
 
-
-	
 	public void apply(List<OperationInstance> opsLog) {
+		for (OperationInstance operationInstance: opsLog) {
+			this.apply(operationInstance);
+		}
+	}
+
+	public void apply(OperationInstance[] opsLog) {
 		for (OperationInstance operationInstance: opsLog) {
 			this.apply(operationInstance);
 		}
@@ -58,8 +62,13 @@ public class MatrixState {
 	}
 
 	public void unapply(List<OperationInstance> opsLog) {
-		for (OperationInstance operationInstance: opsLog) {
-			this.unapply(operationInstance);
+		this.unapply(opsLog.toArray(new OperationInstance[0]));
+	}
+
+	public void unapply(OperationInstance[] opsLog) {
+		//unapply in reverse order!
+		for (int i = opsLog.length - 1; i >= 0; i--) { 
+			this.unapply(opsLog[i]);
 		}
 	}
 	

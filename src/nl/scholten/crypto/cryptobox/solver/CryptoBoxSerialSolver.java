@@ -142,63 +142,20 @@ public class CryptoBoxSerialSolver extends CryptoBoxSolver {
 		}
 
 		for (OperationInstance oi : oisCurrent) {
-			// no more than 2 of the same oi adjacent
-			if (prevOIA != prevOIB || (oi != prevOIA || oi != prevOIB)) {
-
-				if ( // make sure all segments of the same type (row/col) are in
-						// ascending order. Order doesn't matter, so only
-						// calculate for those with ascending order)
-				(prevOIA == null) // no previous OI, so always go.
-						|| (oi.op.isRow != prevOIA.op.isRow) // row after col or
-																// col after row
-																// always go
-						|| (oi.op.isRow == prevOIA.op.isRow && oi.index > prevOIA.index) // row
-																							// after
-																							// row
-																							// should
-																							// ascend,
-																							// same
-																							// for
-																							// col
-																							// after
-																							// col.
-																							// leaves
-																							// only
-																							// 43%
-																							// of
-																							// tries!
-						|| (oi.op.isRow == prevOIA.op.isRow
-								&& oi.index == prevOIA.index && (oi.op.isPositive == prevOIA.op.isPositive)) // CU_0
-																												// CD_0
-																												// not
-																												// useful
-																												// as
-																												// they
-																												// compensate
-																												// eachother.
-																												// leaves
-																												// 39%
-																												// of
-																												// tries
-
-				) {
-					// the above are pure optimizations. All possible outcomes
-					// are still calculated/scored.
-					// the below are "fuzzy" optimizations. Skipping possible
-					// valid opsLogs, so best solution might not be found, but
-					// will give a good indication that might be enough to solve
-					// it manually afterwards.
-					if (!USE_FUZZY
-							|| !USE_FUZZY_RANDOM_SKIP
-							|| Math.random() * 100 > USE_FUZZY_RANDOM_SKIP_PERCENTAGE) {
-						state.apply(oi);
-						doSolveSeriallyInternalNextStep(intermediateResult,	state, postfix);
-						if (state.stepsLeft == 0) //postfix has been applied in this case 
-							state.unapply(postfix);
-						state.unapply(oi);
-					}
+			
+			state.apply(oi);
+			
+			if (OpsLogHelper.isMeaningfull(state.opsLog)) {
+				if (!USE_FUZZY
+						|| !USE_FUZZY_RANDOM_SKIP
+						|| Math.random() * 100 > USE_FUZZY_RANDOM_SKIP_PERCENTAGE) {
+					doSolveSeriallyInternalNextStep(intermediateResult,	state, postfix);
+					if (state.stepsLeft == 0) //postfix has been applied in this case 
+						state.unapply(postfix);
 				}
 			}
+		
+			state.unapply(oi);
 		}
 
 		return intermediateResult;

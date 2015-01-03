@@ -15,13 +15,20 @@ public class HeapPermute<T> {
 	}
 
 	public static <T> void permute(T[] v, int n, Set<List<T>> result) {
+		System.out.print("Calculating permutations: ");
+		long start = System.currentTimeMillis();
+		permuteInternal(v, n, result);
+		System.out.println(System.currentTimeMillis() - start);
+	}
+	
+	public static <T> void permuteInternal(T[] v, int n, Set<List<T>> result) {
 		if (n == 1) {
 //			System.out.println(Arrays.copyOf(v, v.length) + "--" + Arrays.toString(v));
-			
-			result.add(Arrays.asList(Arrays.copyOf(v, v.length)));
+			List<T> perm = Arrays.asList(Arrays.copyOf(v, v.length));
+			result.add(perm);
 		} else {
 			for (int i = 0; i < n; i++) {
-				permute(v, n-1, result);
+				permuteInternal(v, n-1, result);
 				if (n % 2 == 1) {
 					swap(v, 0, n-1);
 				} else {

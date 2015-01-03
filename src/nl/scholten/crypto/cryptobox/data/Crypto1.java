@@ -10,8 +10,8 @@ import java.util.Set;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
 import nl.scholten.crypto.cryptobox.scorer.EndingScorer;
 import nl.scholten.crypto.cryptobox.scorer.IndexOfScorer;
+import nl.scholten.crypto.cryptobox.solver.CryptoBoxSerialSolver;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
-import nl.scholten.crypto.cryptobox.solver.CryptoBoxStrategicSolver;
 
 @SuppressWarnings("serial")
 public class Crypto1 extends CryptoBoxMatrix {
@@ -77,14 +77,23 @@ public class Crypto1 extends CryptoBoxMatrix {
 		scorer.addScorer(new IndexOfScorer(Arrays.asList(HITS)));
 		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));		
 
-//		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
-//		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();
-		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
-//		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).solve();
-		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setPrefixes(PREFIXES).solve();
-//		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setPostfixes(PREFIXES).solve();
-		
+		// solution = [RL_8, CU_3, RR_0, CD_6]
+		List<OperationInstance> permuSource = new ArrayList<OperationInstance>();
+		permuSource.add(new OperationInstance(OPERATION.CD, 6));
+		permuSource.add(new OperationInstance(OPERATION.RL, 8));
+		permuSource.add(new OperationInstance(OPERATION.CU, 3));
+		permuSource.add(new OperationInstance(OPERATION.RR, 0));
 
+		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
+//		CryptoBoxFJSerialSolver solver = new CryptoBoxFJSerialSolver();
+//		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
+		solver.setScorer(scorer).setStartMatrix(m).setSteps(STEPS).setPrefixes(PREFIXES).solve();
+//		solver.setPermuSources(Collections.singleton(permuSource)).setScorer(scorer).setStartMatrix(m).setSteps(STEPS).solve();
+
+		
+//		CryptoBoxPermuSolver solver = new CryptoBoxPermuSolver();
+//		solver.setPermuSource(permuSource).setScorer(scorer).setStartMatrix(m).setSteps(STEPS).solve();
+		
 
 		// System.in.read();
 	}
