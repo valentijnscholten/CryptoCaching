@@ -3,6 +3,8 @@ package nl.scholten.crypto.cryptobox.data;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.scholten.crypto.cryptobox.solver.OpsLogHelper;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class MatrixState {
@@ -30,11 +32,11 @@ public class MatrixState {
 	}
 	
 	public String toString() {
-		return StringUtils.leftPad(String.valueOf(score), 4) + " " + opsLog + " " + matrix.toString();
+		return StringUtils.leftPad(String.valueOf(score), 4) + " " + opsLog + "(" + OpsLogHelper.getChallengeDisplayString(opsLog) + ")" + " " + matrix.toString();
 	}
 
 	public String toStringPretty() {
-		return StringUtils.leftPad(String.valueOf(score), 4) + "\n" + opsLog + "\n" + matrix.toStringPretty();
+		return StringUtils.leftPad(String.valueOf(score), 4) + "\n" + opsLog + "(" + OpsLogHelper.getChallengeDisplayString(opsLog) + ")" + "\n" + matrix.toStringPretty();
 	}
 
 	public void apply(List<OperationInstance> opsLog) {

@@ -1,5 +1,6 @@
 package nl.scholten.crypto.cryptobox.data;
 
+
 public class OperationInstance implements Comparable<OperationInstance>{
 	public OPERATION op;
 	public int index;

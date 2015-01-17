@@ -1,16 +1,19 @@
 package nl.scholten.crypto.cryptobox.scorer;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 
 public class IndexOfLengthScorer implements CryptoBoxScorer {
 
-	private List<String> hits;
+	private List<String> hits = new LinkedList<>();
 
 	public IndexOfLengthScorer(List<String> hits) {
 		super();
-		this.hits = hits;
+		for (String hit: hits) {
+			this.hits.add(hit.toUpperCase());
+		}
 	}
 
 	@Override

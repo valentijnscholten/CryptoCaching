@@ -72,10 +72,12 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 		preStart();
 
 		CounterSingletons.reset();
-		long stratSteps = Math.min(steps, 6);
+		long stratSteps = Math.min(steps, 4);
 		long deltaSteps = 4;
+		long extraIterations = 1;
 //		long extraIterations = 2 * (steps / deltaSteps);
-		long extraIterations = Math.max(0, 2 * ((steps / deltaSteps) - 1));
+//		long extraIterations = Math.max(0, 2 * ((steps / deltaSteps) - 1));
+		long maxPermSize = 8;
 		
 
 		CounterSingletons.reset();
@@ -155,23 +157,28 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 //				}
 //			}
 
-			permutations = winner.getTopScorersOpsLogsNoPermutations();
-			
 			System.out.println("TopOIs: " + winner.getTopScorerOIs().size() + " " + winner.getTopScorerOIs());
 			System.out.println("TopOICounts: " + winner.getTopScorerOICounts());
-			System.out.println("Calculating permutation winners for " + permutations.size() + " permutations.");
-			
-			
-			CounterSingletons.reset();
-//			CryptoBoxSolver permuSolver = new CryptoBoxFJSerialSolver(this);
-//			permuSolver.setSteps(stratSteps);
-//			permuSolver.setPrefixes(permutations);
+			if (stratSteps <= maxPermSize) {
+				permutations = winner.getTopScorersOpsLogsNoPermutations();
+				
+				System.out.println("Calculating permutation winners for " + permutations.size() + " permutations.");
+				
+	//			CryptoBoxSolver permuSolver = new CryptoBoxFJSerialSolver(this);
+	//			permuSolver.setSteps(stratSteps);
+	//			permuSolver.setPrefixes(permutations);
+	
+				CounterSingletons.reset();
+				CryptoBoxFJSerialSolver permuSolver = new CryptoBoxFJSerialSolver(this);
+				permuSolver.setSteps(stratSteps);
+				permuSolver.setPermuSources(permutations);
 
-			CryptoBoxFJSerialSolver permuSolver = new CryptoBoxFJSerialSolver(this);
-			permuSolver.setSteps(stratSteps);
-			permuSolver.setPermuSources(permutations);
-			
-			CryptoBoxResult permuWinners = permuSolver.solve();			
+				CryptoBoxResult permuWinners = permuSolver.solve();			
+				permuWinnersOpsLogs = permuWinners.getTopScorersOpsLogs();
+			} else {
+				//don't go for permutations, just use maxScorers
+				permuWinnersOpsLogs = winner.getMaxScorerOpsLogs();
+			}
 //			if (true) System.exit(0);
 
 			//convert permuwinner to new headstarts
@@ -179,7 +186,6 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 //				permuWinnersOpsLogs.add(permuWinner.opsLog);
 //			}
 //			permuWinnersOpsLogs = permuWinners.getMaxScorerUniqueResultOpsLogs();
-			permuWinnersOpsLogs = permuWinners.getTopScorersOpsLogs();
 			
 			stratSteps += deltaSteps;
 //			if (stratSteps > steps) stratSteps = steps;

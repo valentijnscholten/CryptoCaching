@@ -1,5 +1,6 @@
 package nl.scholten.crypto.cryptobox.scorer;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
@@ -8,9 +9,17 @@ import org.apache.commons.lang3.StringUtils;
 
 public class CountMatchesScorer implements CryptoBoxScorer {
 
-	private List<String> hits;
 	private boolean rewardFirstOccurence;
 
+	private List<String> hits = new LinkedList<>();
+
+	public CountMatchesScorer(List<String> hits) {
+		for (String hit: hits) {
+			this.hits.add(hit.toUpperCase());
+		}
+	}
+
+	
 	@Override
 	public int score(CryptoBoxMatrix matrix) {
 		int result = 0;

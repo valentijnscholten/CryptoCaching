@@ -128,7 +128,15 @@ public class Util {
 		return "N51 40." + (i-2) + "70 E04 24.8"  + (17-i+1) + "1";
 	}
 	
+	public static double kronenburg(int i) {
+		if (i ==0) return (100d/3);
+		
+		return ((100d/3) * Math.pow(1d/3, i)) + kronenburg(i - 1);
+	}
+	
 	public static void main(String[] args) {
+
+		System.out.println(kronenburg(100));
 		
 		Set<OperationInstance> set1 = new HashSet<OperationInstance>();
 		set1.add(new OperationInstance(OPERATION.RL, 1));
