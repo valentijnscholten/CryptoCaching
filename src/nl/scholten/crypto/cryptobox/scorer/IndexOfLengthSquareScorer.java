@@ -28,4 +28,9 @@ public class IndexOfLengthSquareScorer implements CryptoBoxScorer {
 //		System.out.println("scored: " + matrix.data + " " + StringUtils.leftPad(String.valueOf(result), 4));
 		return result;
 	}
+	
+	public String getResult() {
+		return "";
+	}
+	
 }

@@ -35,5 +35,10 @@ public class CountMatchesScorer implements CryptoBoxScorer {
 		}
 		return result;
 	}
+	
+	public String getResult() {
+		return "";
+	}
+
 
 }

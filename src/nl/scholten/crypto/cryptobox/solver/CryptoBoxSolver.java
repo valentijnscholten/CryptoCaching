@@ -172,6 +172,7 @@ public abstract class CryptoBoxSolver {
 		System.out.println("maxScorersUniqueResults: " + result.maxScorersUniqueResults.size());
 		
 		System.out.println(CounterSingletons.TRIES.counter.get() + " / " + result.bruteTries + " = " + (CounterSingletons.TRIES.counter.get() * 100 / result.bruteTries.longValue()) + "%");
+		System.out.println(scorer.getResult());
 	}
 
 	protected void logProgress(CryptoBoxResult intermediateResult, MatrixState state, boolean force) {
@@ -185,7 +186,8 @@ public abstract class CryptoBoxSolver {
 		if (force || effectiveTries % 10000000l == 0) {
 			
 //			System.out.println(state +""+  intermediateResult);
-			System.out.println(StringUtils.leftPad(String.valueOf(CounterSingletons.TRIES.counter.get()), 10)  + " "  + intermediateResult);
+			System.out.println(StringUtils.leftPad(String.valueOf(steps), 3) + " "+ StringUtils.leftPad(String.valueOf(CounterSingletons.TRIES.counter.get()), 10)  + " "  + intermediateResult);
+			System.out.println(scorer.getResult());			
 		}
 	}
 

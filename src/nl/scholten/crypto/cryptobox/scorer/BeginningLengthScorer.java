@@ -31,4 +31,8 @@ public class BeginningLengthScorer implements CryptoBoxScorer {
 		return result;
 	}
 
+	public String getResult() {
+		return "";
+	}
+
 }

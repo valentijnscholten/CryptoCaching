@@ -53,7 +53,8 @@ import org.apache.commons.lang3.Validate;
 
 public class CryptoBoxFJSerialSolver extends CryptoBoxSolver {
 	
-	public final static int FJ_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+//	public final static int FJ_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+	public final static int FJ_POOL_SIZE = Runtime.getRuntime().availableProcessors() / 2;
 //	public final static int FJ_POOL_SIZE = Runtime.getRuntime().availableProcessors() / 4;
 	
 	/**

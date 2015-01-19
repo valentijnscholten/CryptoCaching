@@ -36,4 +36,13 @@ public class CombinedScorer implements CryptoBoxScorer {
 		return result;
 	}
 
+	public String getResult() {
+		String result = "";
+		for(CryptoBoxScorer scorer: scorers) {
+			String scorerResult = scorer.getResult(); 
+			if (scorerResult != "") result +=  scorerResult + "\n";
+		}
+		return result;
+	}
+
 }

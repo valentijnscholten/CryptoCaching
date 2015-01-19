@@ -28,4 +28,8 @@ public class CountMatchesSquareScorer implements CryptoBoxScorer {
 		return result;
 	}
 
+	public String getResult() {
+		return "";
+	}
+	
 }

@@ -1,7 +1,6 @@
 package nl.scholten.crypto.cryptobox.data;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -224,8 +223,8 @@ public class Challenge20Classic extends CryptoBoxMatrix {
 //		scorer.addScorer(new CountMatchesSquareScorer(Arrays.asList(HITS)));
 //		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(ENDINGS)));		
 //		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));		
-//		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie()));
-		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createTrie(Arrays.asList(HITS))));
+		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie()));
+//		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createTrie(Arrays.asList(HITS))));
 		
 //		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
 		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();

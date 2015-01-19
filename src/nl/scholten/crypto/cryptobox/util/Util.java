@@ -14,6 +14,7 @@ import nl.scholten.crypto.cryptobox.data.OPERATION;
 import nl.scholten.crypto.cryptobox.data.OperationInstance;
 
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.CombinatoricsUtils;
 
 public class Util {
 
@@ -134,9 +135,43 @@ public class Util {
 		return ((100d/3) * Math.pow(1d/3, i)) + kronenburg(i - 1);
 	}
 	
+	public static void rggg002() {
+		Integer[] source = new Integer[]{3,2,2,0,3,3,0,4,1,2};
+		Set<String> solutions = new HashSet<>();
+		for(long k = 0; k < CombinatoricsUtils.factorial(source.length) ; k++) {
+//				Integer[] perm = Util.permutation(k, new Integer[]{8,3,2,2,5,0,3,3,0,4,1,2,8,7});
+
+				Integer[] perm = Util.permutation(k, source);
+
+				
+				//perm[0]==5
+				//perm[1]==3
+				
+
+//				if (perm[0]==5 && perm[3]==2 && perm[5]==4 && perm[6]==7 && perm[7] == 8 && perm[9] == 9 && sumFirst(perm) == 45) {
+				if (perm[1] == 2 && sumFirst(perm) == 3) {
+					
+					solutions.add(perm[0]+""+perm[1]+""+perm[2]);//+""+perm[3]);//+""+perm[4]+""+perm[5]);//+""+perm[6]+""+perm[7]+""+perm[8]+""+perm[9]);
+//					System.out.println("BINGO");
+				}
+				
+				//perm[5]==4
+				//perm[6]==7
+				//perm[7]==8
+				//perm[8]==6
+				//perm[9]==9				
+				
+			}
+		System.out.println(solutions);
+	}
+
+	public static Integer sumFirst(Integer[] perm) {
+		return perm[0]+perm[1]+perm[2];//+perm[3];//+perm[4]+perm[5];//+perm[6]+perm[7]+perm[8]+perm[9];
+	}
+	
 	public static void main(String[] args) {
 
-		System.out.println(kronenburg(100));
+		rggg002();
 		
 		Set<OperationInstance> set1 = new HashSet<OperationInstance>();
 		set1.add(new OperationInstance(OPERATION.RL, 1));

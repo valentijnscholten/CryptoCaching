@@ -31,4 +31,9 @@ public class EndingScorer implements CryptoBoxScorer {
 		return result;
 	}
 
+	public String getResult() {
+		return "";
+	}
+
+	
 }

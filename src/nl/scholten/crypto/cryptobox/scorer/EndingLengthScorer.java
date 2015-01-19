@@ -31,4 +31,8 @@ public class EndingLengthScorer implements CryptoBoxScorer {
 		return result;
 	}
 
+	public String getResult() {
+		return "";
+	}
+
 }

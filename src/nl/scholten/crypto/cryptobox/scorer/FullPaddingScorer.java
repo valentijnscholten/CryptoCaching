@@ -31,4 +31,8 @@ public class FullPaddingScorer implements CryptoBoxScorer {
 		return result;
 	}
 	
+	public String getResult() {
+		return "";
+	}
+
 }

@@ -74,7 +74,7 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 		CounterSingletons.reset();
 		long stratSteps = Math.min(steps, 4);
 		long deltaSteps = 4;
-		long extraIterations = 1;
+		long extraIterations = 1000;
 //		long extraIterations = 2 * (steps / deltaSteps);
 //		long extraIterations = Math.max(0, 2 * ((steps / deltaSteps) - 1));
 		long maxPermSize = 8;
@@ -177,7 +177,8 @@ public class CryptoBoxStrategicSolver extends CryptoBoxSolver {
 				permuWinnersOpsLogs = permuWinners.getTopScorersOpsLogs();
 			} else {
 				//don't go for permutations, just use maxScorers
-				permuWinnersOpsLogs = winner.getMaxScorerOpsLogs();
+//				permuWinnersOpsLogs = winner.getMaxScorerOpsLogs();
+				permuWinnersOpsLogs = winner.getTopScorersOpsLogs();
 			}
 //			if (true) System.exit(0);
 
