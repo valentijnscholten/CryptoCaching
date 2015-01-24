@@ -20,7 +20,7 @@ public class AhoCorasick {
 	    	BufferedReader buf = new BufferedReader(new FileReader(file));
 			
 			for(String word = buf.readLine(); word != null; word = buf.readLine()) {
-				System.out.println("Adding " + word);
+//				System.out.println("Adding " + word);
 				trie.addKeyword(word);
 			}
 	    
@@ -47,6 +47,5 @@ public class AhoCorasick {
 	public static Collection<Emit> getMatches(String s, Trie trie) {
 		return trie.parseText(s);
 	}
-	
 	
 }

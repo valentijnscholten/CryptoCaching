@@ -7,7 +7,7 @@ import nl.scholten.crypto.cryptobox.solver.OpsLogHelper;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class MatrixState {
+public class MatrixState implements Comparable<MatrixState> {
 
 	public List<OperationInstance> opsLog;
 	public CryptoBoxMatrix matrix;
@@ -93,6 +93,19 @@ public class MatrixState {
 		if (this.opsLog != ((MatrixState)state2).opsLog)
 			return false;
 		return true;
+	}
+
+	public void copyFrom(MatrixState newState) {
+		this.matrix = new CryptoBoxMatrix(newState.matrix);
+		this.opsLog = new ArrayList<OperationInstance>(newState.opsLog);
+		this.score = newState.score;
+		this.steps = newState.steps;
+		this.stepsLeft = newState.stepsLeft;
+	}
+
+	@Override
+	public int compareTo(MatrixState o) {
+		return new Integer(score).compareTo(o.score);
 	}
 
 	

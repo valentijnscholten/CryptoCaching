@@ -140,4 +140,26 @@ public class OpsLogHelper {
 	}
 
 	
+	//will shift the operation by shiftSize steps.
+	// CD_0 with shiftSize 4 becomes CU_4
+	// CD_0 with shiftSize 14 and matrix size 10 becomes CU_4
+	// RR_0 with shiftSize 34 and matrix size 10 becomes CD_4
+	public static OperationInstance shift(OperationInstance oi,
+			int shiftSize, int matrixSize) {
+		int nextIndex = oi.index + shiftSize;
+		
+		int nextOpIndex = oi.op.index + nextIndex / (matrixSize);
+		nextIndex = nextIndex % (matrixSize);
+		
+		return new OperationInstance(OPERATION.fromIndex(nextOpIndex % 4), nextIndex);
+	}
+
+	public static void main(String[] args) {
+		System.out.println(shift(new OperationInstance(OPERATION.CD, 0), 4, 10));
+		System.out.println(shift(new OperationInstance(OPERATION.CD, 0), 14, 10));
+		System.out.println(shift(new OperationInstance(OPERATION.RR, 0), 34, 10));
+		System.out.println(shift(new OperationInstance(OPERATION.RR, 0), 94, 10));
+	}
+	
+	
 }

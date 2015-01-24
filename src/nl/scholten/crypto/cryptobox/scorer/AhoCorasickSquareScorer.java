@@ -30,7 +30,7 @@ public class AhoCorasickSquareScorer implements CryptoBoxScorer {
 			for (Emit hit : hits) {
 				String hitString = hit.getKeyword();
 				Integer count = matches.get(hitString);
-				if (hitString.length() > 3) {
+				if (hitString.length() > 2) {
 					if (count == null) {
 //					System.out.println("AHO_HIT=" + hitString);
 					count = 0;
@@ -52,4 +52,8 @@ public class AhoCorasickSquareScorer implements CryptoBoxScorer {
 		return Util.sortByDescendingValue(matches).toString();
 	}
 
+	public static void main(String[] args) {
+		System.out.println(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie()).score(new CryptoBoxMatrix("SWISHEDNWWAHERTOKXENESHERTSYNWEIOTECRDAASGOTHEREWKCEPWISWHEREOWSEATYSSETTYWEDPWEWEAYXNSTHERELTWAHXEX",  10)));
+	}
+	
 }

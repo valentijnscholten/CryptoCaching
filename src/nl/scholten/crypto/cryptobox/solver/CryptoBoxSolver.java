@@ -27,8 +27,8 @@ public abstract class CryptoBoxSolver {
 	protected final static boolean USE_FUZZY = true;
 //	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = false;
 	protected final static boolean USE_FUZZY_RANDOM_KEY_ORDER = true;
-	protected final static boolean USE_FUZZY_RANDOM_SKIP = false;
-//	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
+//	protected final static boolean USE_FUZZY_RANDOM_SKIP = false;
+	protected final static boolean USE_FUZZY_RANDOM_SKIP = true;
 	protected final static int USE_FUZZY_RANDOM_SKIP_PERCENTAGE = 90; //at 70% I was still able to get a good enough solution for 1 & 2 
 			
 	protected final static boolean COUNT_ATOMIC = true;

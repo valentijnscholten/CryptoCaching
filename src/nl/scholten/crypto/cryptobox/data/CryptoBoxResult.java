@@ -49,6 +49,7 @@ public class CryptoBoxResult {
 	}
 
 	public CryptoBoxResult merge(MatrixState state) {
+//		System.out.println("merging " + state);
 		if (state.score > 0 && state.score >= this.maxScore) {
 
 			if (state.score > this.maxScore) {
@@ -65,7 +66,7 @@ public class CryptoBoxResult {
 			this.foundTime = System.currentTimeMillis();
 
 			long maxGlobal = CounterSingletons.MAXSCORE.counter.get();
-			if (state.score > maxGlobal) {
+			if (state.score >= maxGlobal) {
 //				// we have to make sure another thread hasn't found a different high
 //				// score which might get overwritten by us
 				if (CounterSingletons.MAXSCORE.counter.compareAndSet(maxGlobal, state.score)) {
