@@ -148,7 +148,7 @@ public class OpsLogHelper {
 			int shiftSize, int matrixSize) {
 		int nextIndex = oi.index + shiftSize;
 		
-		int nextOpIndex = oi.op.index + nextIndex / (matrixSize);
+		int nextOpIndex = oi.op.ordinal + nextIndex / (matrixSize);
 		nextIndex = nextIndex % (matrixSize);
 		
 		return new OperationInstance(OPERATION.fromIndex(nextOpIndex % 4), nextIndex);

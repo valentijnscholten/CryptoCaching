@@ -50,7 +50,7 @@ public class Challenge5 extends CryptoBoxMatrix {
 		CryptoBoxMatrix m = new Challenge5(INPUT);
 
 		CombinedScorer scorer = new CombinedScorer();
-		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie()));		
+		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie("1000words.txt")));		
 
 		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
 //		CryptoBoxFJSerialSolver solver = new CryptoBoxFJSerialSolver();

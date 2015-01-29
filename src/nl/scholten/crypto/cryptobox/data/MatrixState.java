@@ -15,12 +15,14 @@ public class MatrixState implements Comparable<MatrixState> {
 	public long stepsLeft;
 	protected long steps;
 	public int score;
+	public long generation;
 	
 	public MatrixState(CryptoBoxMatrix m, long stepsLeft) {
 		this.matrix = new CryptoBoxMatrix(m);
 		this.steps = 0;
 		this.stepsLeft = stepsLeft;
 		this.opsLog = new ArrayList<OperationInstance>();
+		this.generation = 0;
 	}
 
 	public MatrixState(MatrixState state2) {
@@ -29,6 +31,7 @@ public class MatrixState implements Comparable<MatrixState> {
 		this.opsLog = new ArrayList<OperationInstance>(state2.opsLog);
 		this.matrix = new CryptoBoxMatrix(state2.matrix);
 		this.score = state2.score;
+		this.generation = state2.generation;
 	}
 	
 	public String toString() {
@@ -90,7 +93,7 @@ public class MatrixState implements Comparable<MatrixState> {
 		if (!(state2 instanceof MatrixState))
 			return false;
 		// for now only compare opsLog
-		if (this.opsLog != ((MatrixState)state2).opsLog)
+		if (!this.opsLog.equals(((MatrixState)state2).opsLog))
 			return false;
 		return true;
 	}
@@ -101,6 +104,7 @@ public class MatrixState implements Comparable<MatrixState> {
 		this.score = newState.score;
 		this.steps = newState.steps;
 		this.stepsLeft = newState.stepsLeft;
+		this.generation = newState.generation;
 	}
 
 	@Override

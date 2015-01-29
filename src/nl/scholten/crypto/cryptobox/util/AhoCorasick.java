@@ -11,17 +11,17 @@ import org.ahocorasick.trie.Trie;
 
 public class AhoCorasick {
 
-	public static Trie createEnglishTrie() {
+	public static Trie createEnglishTrie(String filename) {
 	    Trie trie = new Trie();
 	    
 	    try {
 	    	ClassLoader classLoader = trie.getClass().getClassLoader();
-	    	File file = new File(classLoader.getResource("1000words.txt").getFile());
+	    	File file = new File(classLoader.getResource(filename).getFile());
 	    	BufferedReader buf = new BufferedReader(new FileReader(file));
 			
 			for(String word = buf.readLine(); word != null; word = buf.readLine()) {
 //				System.out.println("Adding " + word);
-				trie.addKeyword(word);
+				if (word.length() > 1) trie.addKeyword(word);
 			}
 	    
 			buf.close();

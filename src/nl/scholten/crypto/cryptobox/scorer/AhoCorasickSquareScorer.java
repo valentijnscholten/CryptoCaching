@@ -19,6 +19,8 @@ public class AhoCorasickSquareScorer implements CryptoBoxScorer {
 	
 	public AhoCorasickSquareScorer(Trie trie) {
 		this.trie = trie;
+		trie.removeOverlaps();
+
 	}
 
 	@Override
@@ -38,7 +40,10 @@ public class AhoCorasickSquareScorer implements CryptoBoxScorer {
 					matches.put(hitString, count + 1);
 				} 
 				
-				result += (hit.size() * hit.size()); 
+				result += (hit.size() * hit.size());
+				
+//				if (hit.getStart() == 0) result += 100 * hit.size();
+				if (hit.getStart() == 0) result += 100;
 			}
 			
 			return result;
@@ -53,7 +58,7 @@ public class AhoCorasickSquareScorer implements CryptoBoxScorer {
 	}
 
 	public static void main(String[] args) {
-		System.out.println(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie()).score(new CryptoBoxMatrix("SWISHEDNWWAHERTOKXENESHERTSYNWEIOTECRDAASGOTHEREWKCEPWISWHEREOWSEATYSSETTYWEDPWEWEAYXNSTHERELTWAHXEX",  10)));
+		System.out.println(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie("1000words.txt")).score(new CryptoBoxMatrix("SWISHEDNWWAHERTOKXENESHERTSYNWEIOTECRDAASGOTHEREWKCEPWISWHEREOWSEATYSSETTYWEDPWEWEAYXNSTHERELTWAHXEX",  10)));
 	}
 	
 }

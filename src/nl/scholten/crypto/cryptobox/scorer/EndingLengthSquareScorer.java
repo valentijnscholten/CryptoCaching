@@ -4,12 +4,12 @@ import java.util.List;
 
 import nl.scholten.crypto.cryptobox.data.CryptoBoxMatrix;
 
-public class EndingLengthScorer implements CryptoBoxScorer {
+public class EndingLengthSquareScorer implements CryptoBoxScorer {
 
 	private List<String> endings;
 	private boolean forceEndMatch;
 
-	public EndingLengthScorer(List<String> endings) {
+	public EndingLengthSquareScorer(List<String> endings) {
 		this.endings = endings;
 	}
 
@@ -19,7 +19,7 @@ public class EndingLengthScorer implements CryptoBoxScorer {
 		boolean endMatch = false;
 		for (String ending : endings) {
 			if (matrix.data.endsWith(ending)) {
-				result += ending.length();
+				result += (ending.length() + 10) * (ending.length() + 10) ;
 				endMatch = true;
 				break;
 			}

@@ -19,10 +19,12 @@ public class CuckooSolver extends CryptoBoxSolver {
 	
 	public final static int nrOfNests = 20;
 	//fraction of nests to abandon
-	public final static double p = 0.25;
+	public final static double p = 0.50;
 	//fraction of parameters from end of opslog to change in randomwalk
 //	public final static double R = 0.50;
 	public final static double R = 0.10;
+	
+	public final static double SHUFFLE = 0.25;
 	
 	public List<MatrixState> nests;
 	public long maxGenerations;
@@ -34,14 +36,21 @@ public class CuckooSolver extends CryptoBoxSolver {
 	
 	@Override
 	public CryptoBoxResult solve() {
+		System.out.println(String.format("p=%s R=%s SHUFFLE=%s", p, R, SHUFFLE));
 		CryptoBoxResult result = new CryptoBoxResult(this.startMatrix.size, 1L);
 		result.startTime = System.currentTimeMillis();
 
 //		maxGenerations = 10;
+//		maxGenerations = 50;
+//		maxGenerations = 500;
 //		maxGenerations = 5000;
 //		maxGenerations = 50000;
-		maxGenerations = 500000;
+//		maxGenerations = 100000;
+//		maxGenerations = 500000;
+		maxGenerations = 1000000; //400s = 6,5min
 //		maxGenerations = 5000000;
+		maxGenerations = 50000000;
+		
 		nests = createRandomNests(nrOfNests, steps, this.startMatrix);
 
 		long globalMax = 0;
@@ -51,9 +60,8 @@ public class CuckooSolver extends CryptoBoxSolver {
 			int i = rand.nextInt(nrOfNests);
 			MatrixState state = nests.get(i);
 			
-//			System.out.println("BEFORE: " + state.opsLog);
 			MatrixState newState = performRandomWalkCheckConstraints(state, t, R);
-//			System.out.println("AFTER: " + newState.opsLog);
+			newState.generation = t;
 			
 		    int j = i;
 		    while (j == i) {
@@ -65,7 +73,6 @@ public class CuckooSolver extends CryptoBoxSolver {
 //			if (newState.score > state.score && newState.score > targetState.score) {
 			if (newState.score > targetState.score) {
 				//new solution is better, so overwrite existing nest
-//				System.out.println("improvement " + newState.score + " over " + targetState.score);
 				targetState.copyFrom(newState);
 			}
 		      
@@ -97,7 +104,7 @@ public class CuckooSolver extends CryptoBoxSolver {
 
 		logResult(result);
 		printScores(nests);
-		System.out.println(winner.matrix.data);
+		System.out.println(winner.matrix.data + " " + winner.generation + " (max gen: " + maxGenerations + ")");
 		return result;
 	}
 	
@@ -126,7 +133,8 @@ public class CuckooSolver extends CryptoBoxSolver {
 	}
 	
 	private MatrixState performRandomWalkCheckConstraints(MatrixState state, int generation, double fraction) {
-		OperationInstance[] newOpsLog = state.opsLog.toArray(new OperationInstance[0]);
+		OperationInstance[] newOpsLog = Arrays.copyOf(state.opsLog.toArray(new OperationInstance[0]), state.opsLog.size());
+		OperationInstance[] oldOpsLog = state.opsLog.toArray(new OperationInstance[0]);
 		int tries = 0;
 		do {
 			if (tries > MAX_RANDOM_WALK_ATTEMPTS) {
@@ -137,13 +145,19 @@ public class CuckooSolver extends CryptoBoxSolver {
 
 			
 //			OperationInstance[] newOpsLog = performRandomWalkFractionEnd(opsLog, state.matrix.size, generation, fraction);
-			newOpsLog = performRandomWalkFractionAll(newOpsLog, state.matrix.size, generation, fraction);
+//			System.out.println("BEFORE: " + Arrays.toString(oldOpsLog));
+			if (rand.nextDouble() < SHUFFLE) {
+				newOpsLog = performRandomWalkShuffleAll(state);
+			} else {
+				newOpsLog = performRandomWalkFractionAll(newOpsLog, state.matrix.size, generation, fraction);
+			}
+//			System.out.println(" AFTER: " + Arrays.toString(newOpsLog));
 
 			/* If the random walk resulted in a solution that is not within constraints,
 		     * then try another random walk from the original solution. */
 			
 		    tries++;
-		} while(!checkConstraint(newOpsLog));
+		} while(!checkConstraint(oldOpsLog, newOpsLog));
 		if (tries > 100) System.out.println("Needed " + tries + " to perform walk");
 		
 		MatrixState newState = new MatrixState(this.startMatrix, steps);
@@ -153,6 +167,15 @@ public class CuckooSolver extends CryptoBoxSolver {
 		return newState;
 	}
 	
+	private OperationInstance[] performRandomWalkShuffleAll(MatrixState state) {
+		List<OperationInstance> shuffledOpslog = new ArrayList<OperationInstance>(state.opsLog);
+		
+		Collections.shuffle(shuffledOpslog);
+		
+		return shuffledOpslog.toArray(new OperationInstance[0]);
+		
+	}
+
 	private OperationInstance[] performRandomWalkFractionAll(OperationInstance[] opsLog, int size, int generation, double fraction) {
 
 		//for fraction R of opsLog items, shift item in the opslog by a random index
@@ -205,6 +228,7 @@ public class CuckooSolver extends CryptoBoxSolver {
 			MatrixState abandon = sortedNests.get(i);
 //			System.out.println("ABANDONED: " + abandon);
 			MatrixState replacer = performRandomWalkCheckConstraints(abandon, generation, 1 - R);
+			replacer.generation = generation;
 			sortedNests.set(i, replacer);
 //			System.out.println("GENERATED: " + sortedNests.get(i));
 		}
@@ -221,12 +245,14 @@ public class CuckooSolver extends CryptoBoxSolver {
 		System.out.println();
 	}
 
-	private boolean checkConstraint(OperationInstance[] opsLog) {
+	private boolean checkConstraint(OperationInstance[] oldOpsLog, OperationInstance[] newOpsLog) {
 		// TODO Remove constraint check?
 //		boolean isMeaningfull = OpsLogHelper.isMeaningfull(opsLog);
-		boolean isMeaningfull = true;
+//		boolean isMeaningfull = true;
+//		boolean isMeaningfull = !Arrays.equals(oldOpsLog, newOpsLog);
+		boolean isMeaningfull = !opsLogExists(nests, newOpsLog);
 		if (!isMeaningfull) {
-			System.out.println("Not meaningfull: " + Arrays.toString(opsLog));
+//			System.out.println(" SKIP: " + Arrays.toString(newOpsLog));
 		}
 		return isMeaningfull;
 	}
@@ -238,4 +264,44 @@ public class CuckooSolver extends CryptoBoxSolver {
 		return null;
 	}
 
+	public static boolean scoreExists(List<MatrixState> nests, MatrixState newNest) {
+		for(MatrixState nest: nests) {
+			if (nest.score == newNest.score) {
+				System.out.println("Same score nest: ");
+				System.out.println(nest);
+				System.out.println(" newNest: ");
+				System.out.println(newNest);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public static boolean opsLogExists(List<MatrixState> nests, MatrixState newNest) {
+		for(MatrixState nest: nests) {
+			if (nest.opsLog.equals(newNest.opsLog)) {
+				System.out.println("Same opsLog existing nest: ");
+				System.out.println(nest);
+				System.out.println(" newNest: ");
+				System.out.println(newNest);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static boolean opsLogExists(List<MatrixState> nests, OperationInstance[] newOpsLog) {
+		for(MatrixState nest: nests) {
+			if (Arrays.equals(nest.opsLog.toArray(new OperationInstance[0]), newOpsLog)) {
+//				System.out.println("Same opsLog existing nest: ");
+//				System.out.println(nest.opsLog);
+//				System.out.println(" newNest: ");
+//				System.out.println(Arrays.toString(newOpsLog));
+				return true;
+			}
+		}
+		return false;
+	}
+
+	
 }

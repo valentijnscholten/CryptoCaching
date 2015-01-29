@@ -9,7 +9,7 @@ import java.util.Set;
 import nl.scholten.crypto.cryptobox.scorer.BeginningLengthScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
 import nl.scholten.crypto.cryptobox.scorer.CountMatchesSquareScorer;
-import nl.scholten.crypto.cryptobox.scorer.EndingLengthScorer;
+import nl.scholten.crypto.cryptobox.scorer.EndingLengthSquareScorer;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxStrategicSolver;
 
@@ -75,7 +75,7 @@ public class Challenge10Classic extends CryptoBoxMatrix {
 		CombinedScorer scorer = new CombinedScorer();
 		scorer.addScorer(new CountMatchesSquareScorer(Arrays.asList(HITS)));
 		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(ENDINGS)));		
-		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));		
+		scorer.addScorer(new EndingLengthSquareScorer(Arrays.asList(ENDINGS)));		
 
 		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
 //		CryptoBoxFJSerialSolver solver = new CryptoBoxFJSerialSolver();

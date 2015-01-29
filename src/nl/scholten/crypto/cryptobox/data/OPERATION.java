@@ -7,13 +7,13 @@ public enum OPERATION {
 	public boolean isRow;
 	public boolean isPositive;
 	public String value;
-	public int index;
+	public int ordinal;
 
-	private OPERATION(boolean isRow, boolean isPositive, String value, int index) {
+	private OPERATION(boolean isRow, boolean isPositive, String value, int ordinal) {
 		this.isRow = isRow;
 		this.isPositive = isPositive;
 		this.value = value;
-		this.index = index;
+		this.ordinal = ordinal;
 	}
 
 	public static OPERATION parseValue(String value) {
@@ -29,16 +29,16 @@ public enum OPERATION {
 	}
 
 	public int getIndex() {
-		return index;
+		return ordinal;
 	}
 	
 	public String toString() {
 		return getValue();
 	}
 	
-	public static OPERATION fromIndex(int index) {
+	public static OPERATION fromIndex(int ordinal) {
 		for(OPERATION op: OPERATION.values()) {
-			if (op.index == index)
+			if (op.ordinal == ordinal)
 				return op;
 		}
 		return null;

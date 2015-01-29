@@ -9,7 +9,7 @@ import java.util.Set;
 import nl.scholten.crypto.cryptobox.scorer.BeginningLengthScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
 import nl.scholten.crypto.cryptobox.scorer.CountMatchesSquareScorer;
-import nl.scholten.crypto.cryptobox.scorer.EndingLengthScorer;
+import nl.scholten.crypto.cryptobox.scorer.EndingLengthSquareScorer;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxStrategicSolver;
 
@@ -61,7 +61,7 @@ public class Crypto4 extends CryptoBoxMatrix {
 //		scorer.addScorer(new BeginningScorer(Arrays.asList(BEGINNINGS)));
 		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(BEGINNINGS)));
 //		scorer.addScorer(new EndingScorer(Arrays.asList(ENDINGS)));
-		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));
+		scorer.addScorer(new EndingLengthSquareScorer(Arrays.asList(ENDINGS)));
 
 //		CryptoBoxSolver solver = new CryptoBoxSerialSolver();
 //		CryptoBoxSolver solver = new CryptoBoxFJSerialSolver();

@@ -223,7 +223,7 @@ public class Challenge20Classic extends CryptoBoxMatrix {
 //		scorer.addScorer(new CountMatchesSquareScorer(Arrays.asList(HITS)));
 //		scorer.addScorer(new BeginningLengthScorer(Arrays.asList(ENDINGS)));		
 //		scorer.addScorer(new EndingLengthScorer(Arrays.asList(ENDINGS)));		
-		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie()));
+		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createEnglishTrie("1000words.txt")));
 //		scorer.addScorer(new AhoCorasickSquareScorer(AhoCorasick.createTrie(Arrays.asList(HITS))));
 		
 //		CryptoBoxSolver solver = new CryptoBoxStrategicSolver();
