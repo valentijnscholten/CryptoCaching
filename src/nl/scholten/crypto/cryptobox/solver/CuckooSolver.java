@@ -75,7 +75,12 @@ public class CuckooSolver extends CryptoBoxSolver {
 				//new solution is better, so overwrite existing nest
 				targetState.copyFrom(newState);
 			}
-		      
+
+			if (newState.score >= globalMax) {
+				System.out.println("dup winner: " + StringUtils.leftPad(String.valueOf(globalMax), 3)  + " iteration " + StringUtils.leftPad(String.valueOf(t), 10) + " " + newState.matrix.data);
+			}
+
+			
 			nests = abandonWorstSolutions(nests, nrOfNests, steps, t);
 			
 //			printScores(nests);

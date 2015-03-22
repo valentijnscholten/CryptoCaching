@@ -7,9 +7,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import nl.scholten.crypto.cryptobox.scorer.AhoCorasickTokenizedSquareScorer;
+import nl.scholten.crypto.cryptobox.scorer.AhoCorasickTokenizedSimpleScorer;
 import nl.scholten.crypto.cryptobox.scorer.CombinedScorer;
-import nl.scholten.crypto.cryptobox.scorer.EndingLengthSquareScorer;
+import nl.scholten.crypto.cryptobox.scorer.EndingExtraScorer;
 import nl.scholten.crypto.cryptobox.solver.CryptoBoxSolver;
 import nl.scholten.crypto.cryptobox.solver.CuckooSolver;
 import nl.scholten.crypto.cryptobox.util.AhoCorasick;
@@ -24,7 +24,7 @@ public class Challenge20Cuckoo extends CryptoBoxMatrix {
 	public static String[] HITS = new String[] { "SWEET", "WHEN", "EYES", "WERE", "WHEN", "TRY", "LAW", "WAIT", "LETTERS", "WHETHER", "WRITTEN", "DOWN" };
 
 	public static String[] BEGINNINGS = new String[] { "LETTERSWEEITHER", "WRITTENDOWNLETTERS", "WRITTENDOWN", "WHETHER", "WRITTEN", "LETTERS", "ELITE" };
-	public static String[] ENDINGS = new String[] { "X", "XX", "XXX"};
+	public static String[] ENDINGS = new String[] { "X", "XX" };
 
 	public static final Set<List<OperationInstance>> PREFIXES = new HashSet<List<OperationInstance>>();
 	static {
@@ -51,13 +51,15 @@ public class Challenge20Cuckoo extends CryptoBoxMatrix {
 		CryptoBoxMatrix m = new Challenge20Cuckoo(INPUT);
 
 		CombinedScorer scorer = new CombinedScorer();
-		Trie trie = AhoCorasick.createEnglishTrie("5000words.txt");
+		Trie trie = AhoCorasick.createEnglishTrie("1000words.txt");
 		trie.addKeyword("EYESRED");
 		trie.addKeyword("REDEYES");
 		trie.addKeyword("ANOTHERWEEK");
-		scorer.addScorer(new AhoCorasickTokenizedSquareScorer(trie, Arrays.asList(HITS)));		
+		trie.addKeyword("WHENWEASKED");
+		scorer.addScorer(new AhoCorasickTokenizedSimpleScorer(trie));		
+//		scorer.addScorer(new AhoCorasickTokenizedSquareScorer(trie, Arrays.asList(HITS)));		
 //		scorer.addScorer(new BeginningLengthSquareScorer(Arrays.asList(BEGINNINGS)));		
-		scorer.addScorer(new EndingLengthSquareScorer(Arrays.asList(ENDINGS)));		
+		scorer.addScorer(new EndingExtraScorer(Arrays.asList(ENDINGS)));		
 
 		CryptoBoxSolver solver = new CuckooSolver();
 //		CryptoBoxFJSerialSolver solver = new CryptoBoxFJSerialSolver();

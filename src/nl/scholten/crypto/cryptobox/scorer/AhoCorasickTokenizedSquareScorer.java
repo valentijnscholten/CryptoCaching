@@ -38,6 +38,7 @@ public class AhoCorasickTokenizedSquareScorer implements CryptoBoxScorer {
 			
 			int result = 0;
 			Emit prevMatch = null;
+			int currentStreakStart = -1;
 			for(Token token: trie.tokenize(matrix.data)) {
 				if (token.isMatch()) {
 					Emit hit = token.getEmit();
@@ -63,11 +64,22 @@ public class AhoCorasickTokenizedSquareScorer implements CryptoBoxScorer {
 //					if (hit.getStart() == 0 && hitString.equals("LETTERS")) result += 100 * hit.size();
 //					if (hit.getStart() == 0 && hitString.equals("WHETHER")) result += 100 * hit.size();
 					
+					if (currentStreakStart < 0) {
+						currentStreakStart = hit.getStart();
+					}
+					
 					//if two matches adjacent => more mpoints
-					if (prevMatch != null) result += prevMatch.size() * hit.size();
+					if (prevMatch != null) {
+						result += prevMatch.size() * hit.size();
+						if (currentStreakStart == 0) {
+							//multiple matches adjacent at start of string, so extra points.
+							result += hit.getEnd();
+						}
+					}
 					prevMatch = hit;
 				} else {
 					prevMatch = null;
+					currentStreakStart = -1;
 				}
 			}
 			
